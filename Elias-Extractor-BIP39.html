@@ -227,7 +227,10 @@ function sha256HexStr(str){
    => rank ของลำดับภายใน type เป็น uniform บน [0,M) โดย M = multinomial coefficient
    จากนั้นแปลง rank (uniform) เป็นบิต unbiased ด้วย Elias peeling
    ========================================================================== */
-function factorials(kMax){ const f=[1n]; for(let i=1;i<=kMax;i++) f.push(f[i-1]*BigInt(i)); return f; }
+// memoized factorials — เก็บ cache ระดับ global แล้วคำนวณต่อจากจุดเดิม (ไม่เริ่มใหม่ทุกครั้ง)
+// ผู้เรียกอ่านค่าดัชนี <= kMax เท่านั้น การคืน array ที่ใช้ร่วมกันจึงปลอดภัย (read-only)
+const F_CACHE=[1n];
+function factorials(kMax){ for(let i=F_CACHE.length;i<=kMax;i++) F_CACHE.push(F_CACHE[i-1]*BigInt(i)); return F_CACHE; }
 
 // นับ type -> M ; และ rank r ภายใน type (combinatorial number system)
 // ไล่ตำแหน่งซ้าย->ขวา สะสมจำนวนลำดับที่ "มาก่อน" (วางสัญลักษณ์เล็กกว่าที่ตำแหน่งนั้น)
