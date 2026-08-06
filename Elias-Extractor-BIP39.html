@@ -54,6 +54,12 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .p-bip .step{border-left-color:var(--am);background:#12100a}
 .p-bip .step b{color:var(--am)}
 .p-bip button{background:#2a2206;border-color:var(--am);color:#ffe9a8}.p-bip button:hover{background:#3a3010}
+.p-salt{border:1px solid #5a2f7a;border-left:5px solid #b06bff;background:linear-gradient(180deg,#170a24,var(--pnl));box-shadow:0 0 20px -6px #b06bff}
+.p-salt label{color:#e0c8ff}
+.p-salt .en{color:#9a86b8}
+.p-salt code.mono{color:#e3bbff}
+.p-salt input[type=checkbox]{accent-color:#b06bff}
+.p-salt button{background:#2a1140;border-color:#b06bff;color:#ecd9ff}.p-salt button:hover{background:#3a1a58}
 .p-test{border:1px solid #215a3d;border-left:5px solid var(--gn);background:linear-gradient(180deg,#08170f,var(--pnl));box-shadow:0 0 16px -8px var(--gn)}
 .p-test h2{color:var(--gn);border-bottom-color:#215a3d}
 .p-test .pill{color:var(--gn);border-color:#2f6a4c}
@@ -91,7 +97,17 @@ code{overflow-wrap:anywhere}
 footer{text-align:center;color:var(--dim);margin-top:22px;padding-top:10px;border-top:1px solid var(--brd);font-size:11px}
 kbd{background:#10202a;border:1px solid #2a5a7a;border-radius:3px;padding:0 4px;color:#bfe8ff}
 .pill{font-size:10px;color:var(--dim);border:1px solid var(--brd);border-radius:10px;padding:1px 7px;margin-left:6px}
-</style></head><body>
+/* กันแอบมอง (shoulder-surfing): เบลอข้อมูลลับ เผยเมื่อชี้เมาส์/แตะค้าง */
+body.privacy .mn,body.privacy .mono,body.privacy code.bin,
+body.privacy td.bin,body.privacy td.dec,body.privacy td.w{filter:blur(5px);cursor:pointer;transition:filter .12s}
+/* seed / hex / binary block — เผยเฉพาะจุดที่ชี้/แตะ */
+body.privacy .mn:hover,body.privacy .mn:active,
+body.privacy .mono:hover,body.privacy .mono:active,
+body.privacy code.bin:hover,body.privacy code.bin:active{filter:none}
+/* ตาราง BIP-39 — ชี้/แตะแถวไหน เผยทั้งแถว (11-bit + index + word) */
+body.privacy tr:hover td.bin,body.privacy tr:hover td.dec,body.privacy tr:hover td.w,
+body.privacy tr:active td.bin,body.privacy tr:active td.dec,body.privacy tr:active td.w{filter:none}
+</style></head><body class="privacy">
 
 <h1>&#9670; Elias Extractor &rarr; BIP-39 Seed Generator</h1>
 <div class="sub">เปลี่ยนการทอยลูกเต๋า/เหรียญที่อาจมี bias ให้เป็น entropy ที่กระจายสม่ำเสมอแบบพิสูจน์ได้ &middot; ใช้ Elias extractor &middot; ไม่ใช้ hash ในการสร้าง entropy &middot; ทำงานออฟไลน์ 100%
@@ -127,6 +143,14 @@ kbd{background:#10202a;border:1px solid #2a5a7a;border-radius:3px;padding:0 4px;
   </div>
 </div>
 
+<!-- System Entropy (Salt) — ทางเลือก / optional -->
+<div class="panel p-salt">
+  <label style="cursor:pointer;font-size:13px"><input type="checkbox" id="saltChk" onchange="onSaltToggle()" style="width:auto;margin-right:7px;vertical-align:middle"> &#129482; ผสม System Entropy (Salt) เพิ่ม / add optional system-entropy salt</label>
+  <div class="dim" style="font-size:11px">ปกติ seed สร้างจากลำดับการทอยแบบตายตัว (deterministic) — หากมีคนแอบจดลำดับการทอย หรือมี keylogger ก็สร้าง seed เดิมซ้ำได้. เปิดตัวเลือกนี้เพื่อ <b>ผสมความสุ่มจากเครื่อง (XOR)</b> ทำให้ seed ขึ้นกับทั้งลูกเต๋าและการสุ่มของเครื่อง จึงทำซ้ำจาก log การทอยเพียงอย่างเดียวไม่ได้ · ยังคง uniform และ hash-free · <b>ค่าเริ่มต้นปิด</b> เพื่อคงเส้นทางที่พิสูจน์ได้จากลูกเต๋าล้วน
+    <span class="en">By default the seed is deterministic from your rolls; anyone who records the roll sequence could reproduce it. Enable this to XOR in system randomness so the seed depends on both the dice and the machine — it can no longer be reproduced from a roll log alone. Still uniform and hash-free. Off by default.</span></div>
+  <div id="saltState" class="dim" style="margin-top:6px"></div>
+</div>
+
 <!-- กล่องอธิบาย Elias -->
 <div class="note">
 &#9432; <b>Elias extractor คืออะไร?</b> มันดูที่ <b>"อันดับของการเรียงลำดับ" (rank ภายใน type)</b> ไม่ใช่ค่าหน้าที่ทอยออกมา &mdash;
@@ -143,6 +167,7 @@ kbd{background:#10202a;border:1px solid #2a5a7a;border-radius:3px;padding:0 4px;
   <textarea id="inp" oninput="onInput()" placeholder="พิมพ์ที่นี่ / type here — ตัวอย่าง/e.g.  A3F0 9C1D 7E2B"></textarea>
   <div class="row" style="margin-top:8px">
     <div style="flex:0"><button class="danger" onclick="wipe()">&#128465; ล้างทั้งหมด / WIPE (เคลียร์ RAM)</button></div>
+    <div style="flex:0"><button id="privBtn" onclick="togglePrivacy(this)">&#128374; กันแอบมอง: เปิด</button></div>
     <div style="flex:0"><button onclick="backspace()">&#9003; ลบตัวท้าย / undo</button></div>
     <div id="valMsg" style="flex:1;align-self:center" class="warn"></div>
   </div>
@@ -155,6 +180,8 @@ kbd{background:#10202a;border:1px solid #2a5a7a;border-radius:3px;padding:0 4px;
 const $=id=>document.getElementById(id);
 let SEQ=[];                      // ลำดับสัญลักษณ์ตามเวลา (index 0..n-1) — real entropy buffer
 let LAST=null;                   // ผลลัพธ์ล่าสุด (สำหรับ gate/แสดงผล)
+let SALT=null;                   // System Entropy (Salt): Uint8Array(32) เมื่อเปิดใช้ (opt-in) ไม่งั้น null
+const MAX_SEQ=2000;              // เพดานจำนวนสัญลักษณ์ กันการป้อนมหาศาลจน BigInt คำนวณค้าง (UI freeze)
 
 /* นิยาม alphabet ของแต่ละแหล่ง (สัญลักษณ์ที่ผู้ใช้เห็น -> ดัชนี 0..n-1) */
 const ALPHABETS={
@@ -306,7 +333,23 @@ function minEntropyPerSym(counts,N,n){const pmax=Math.max(...counts)/N;return pm
 /* ==========================================================================
    ส่วนที่ 4 — BIP39 (entropy บิต -> mnemonic) · ตรวจ wordlist ครบ 2048
    ========================================================================== */
-const WL_OK = (typeof WL!=="undefined") && WL.length===2048;
+// ตรวจ wordlist แบบรัดกุมหลายชั้น: (1) มีตัวแปร (2) ครบ 2048 (3) ไม่ซ้ำ
+// (4) เรียง A→Z เป๊ะ (จับการสลับ/แทนที่คำ) (5) SHA-256 ของทั้งก้อนตรงค่ามาตรฐาน
+// ชั้น (5) จับได้แม้มีคำนอกมาตรฐาน (เช่น "feast"/"forever") หลุดเข้ามาเพียงคำเดียว
+const WL_SHA256="f18b9a84c83e38e98eceb0102b275e26438af83ab08f080cdb780a2caa9f3a6d";
+function wordlistValid(){
+  if(typeof WL==="undefined"||!Array.isArray(WL)||WL.length!==2048) return false;
+  const seen=new Set();
+  for(let i=0;i<WL.length;i++){
+    const w=WL[i];
+    if(typeof w!=="string"||!/^[a-z]{3,8}$/.test(w)) return false;   // ต้องเป็น a-z ล้วน ยาว 3–8
+    if(seen.has(w)) return false;                                    // ห้ามซ้ำ
+    seen.add(w);
+    if(i>0 && !(WL[i-1]<w)) return false;                            // ต้องเรียงเพิ่มเข้ม (strictly ascending)
+  }
+  return sha256HexStr(WL.join(" "))===WL_SHA256;                     // แฮชทั้งก้อนตรงมาตรฐาน
+}
+const WL_OK = wordlistValid();
 function bitsToBytes(bits){const out=[];for(let i=0;i<bits.length;i+=8)out.push(parseInt(bits.slice(i,i+8),2));return out;}
 function buildMnemonic(entBits){           // entBits: สตริงบิตยาว = target (128/256)
   const ENT=entBits.length,CS=ENT/32,bytes=bitsToBytes(entBits);
@@ -332,18 +375,41 @@ function onTypeChange(){renderPad();onInput();}
 function onInput(){
   const A=curType(), allow=new Set(A.syms.map(s=>s.toUpperCase()));
   const el=$("inp"), raw=el.value, pos=el.selectionStart||0;
-  let out="", removed=0;
+  let out="", removed=0, sym=0, capped=false;
   for(let i=0;i<raw.length;i++){
     const ch=raw[i];
     if(ch===" "||ch==="\n"||ch==="\t"){ out+=ch; continue; }   // คงตัวคั่นเพื่อการอ่าน
     const u=ch.toUpperCase();
-    if(allow.has(u)) out+=u; else if(i<pos) removed++;          // ตัดอักขระนอกชุด + ปรับตำแหน่งเคอร์เซอร์
+    if(allow.has(u)){
+      if(sym>=MAX_SEQ){ capped=true; if(i<pos) removed++; continue; }  // เกินเพดาน → ตัดทิ้ง กัน UI freeze
+      out+=u; sym++;
+    } else if(i<pos) removed++;                                 // ตัดอักขระนอกชุด + ปรับตำแหน่งเคอร์เซอร์
   }
   if(out!==raw){ el.value=out; const np=pos-removed; try{el.setSelectionRange(np,np);}catch(e){} }
   recompute();
+  if(capped) $("valMsg").textContent="ถึงเพดาน "+MAX_SEQ+" สัญลักษณ์ (กันการค้าง) / reached "+MAX_SEQ+"-symbol cap";
 }
 function backspace(){$("inp").value=$("inp").value.slice(0,-1);recompute();}
-function wipe(){SEQ=[];LAST=null;$("inp").value="";$("valMsg").textContent="";recompute();}
+// กันแอบมอง (shoulder-surfing): เบลอข้อมูลลับ (seed/entropy/hex/คำ) จนกว่าจะชี้เมาส์หรือแตะค้าง
+function togglePrivacy(btn){const on=document.body.classList.toggle("privacy");
+  btn.innerHTML=on?"&#128374; กันแอบมอง: เปิด":"&#128374; กันแอบมอง: ปิด";}
+function wipe(){
+  // เขียนทับข้อมูลใน memory ด้วย 0 ก่อนปล่อย reference. หมายเหตุ: JS การันตี physical RAM ไม่ได้ 100%
+  // (GC + string เป็น immutable) — จึงบังคับ overwrite buffer ที่เขียนได้ให้เป็นบิต 0 ทั้งหมด แล้วแนะนำรีสตาร์ต Tails
+  try{
+    if(Array.isArray(SEQ)) SEQ.fill(0);
+    if(SALT) SALT.fill(0);
+    if(typeof SALT_POOL!=="undefined") SALT_POOL.fill(0);
+    if(LAST&&Array.isArray(LAST.counts)) LAST.counts.fill(0);
+  }catch(e){}
+  SEQ=[]; LAST=null; SALT=null;
+  if($("saltChk")) $("saltChk").checked=false;
+  $("inp").value=""; $("valMsg").textContent="";
+  $("entOut").innerHTML=""; $("bip").innerHTML=""; if($("saltState")) $("saltState").textContent="";  // ล้าง seed/entropy ออกจาก DOM
+  recompute();
+  // แจ้งตรง ๆ ว่า string เดิม (bits/seed) ใน JS เป็น immutable เขียนทับไม่ได้ ต้องพึ่ง GC + รีสตาร์ต Tails
+  $("valMsg").textContent="ล้าง buffer แล้ว · string เดิม (bits/seed) อาจค้างใน RAM จนกว่า GC — รีสตาร์ต Tails เพื่อล้าง RAM จริง / restart Tails to fully clear RAM";
+}
 // parse textarea -> ดัชนี ; ตัดอักขระไม่ถูกต้อง + เตือน (case-insensitive, ตัดช่องว่าง)
 function parseInput(){
   const A=curType(),map={};A.syms.forEach((s,i)=>{map[s.toUpperCase()]=i;});
@@ -353,6 +419,59 @@ function parseInput(){
   $("valMsg").textContent = bad?("ข้ามอักขระที่ไม่ใช่ของแหล่งนี้ "+bad+" ตัว / skipped "+bad+" invalid character(s)"):"";
   return seq;
 }
+
+/* ==========================================================================
+   ส่วนที่ 5.5 — System Entropy (Salt)  [ทางเลือก / opt-in]
+   ประโยชน์: ปกติ seed = f(ลำดับการทอย) แบบ deterministic 100% — ถ้ามีคนแอบจดลำดับการทอย
+   หรือมี hardware keylogger ก็สามารถประมวลผลซ้ำให้ได้ seed เดียวกันได้ การผสม salt จากระบบ
+   ด้วย XOR ทำให้ seed ขึ้นกับทั้ง "ลูกเต๋า + ความสุ่มจากเครื่อง" จึงทำซ้ำจาก log การทอยเพียงอย่างเดียวไม่ได้
+   ความถูกต้องไม่เสีย: XOR ค่า uniform กับสิ่งที่อิสระ ยังคง uniform เสมอ และ XOR ไม่ใช่ hash → ยัง hash-free
+   ค่าเริ่มต้น = ปิด เพื่อคงเส้นทาง "พิสูจน์ได้จากลูกเต๋าล้วน" ไว้เป็นค่าตั้งต้น
+   ========================================================================== */
+const SALT_POOL=new Uint8Array(32); let POOL_I=0;
+function mixPool(v){ v=(v>>>0);
+  SALT_POOL[POOL_I%32]=(SALT_POOL[POOL_I%32]^(v&0xff)^((v>>>8)&0xff)^((v>>>16)&0xff)^((v>>>24)&0xff))&0xff;
+  POOL_I=(POOL_I+1)%32; }
+try{ document.addEventListener("mousemove",e=>mixPool((e.clientX*40503)^(e.clientY*65537)^((performance.now()*1000)|0)),{passive:true});
+     document.addEventListener("keydown", e=>mixPool(((e.timeStamp*1000)|0)^0x9e3779b9),{passive:true}); }catch(e){}
+// สร้าง salt 32 ไบต์: หลัก = crypto.getRandomValues (ใช้ได้ใน file:// ไม่ต้อง secure context, ต่างจาก crypto.subtle)
+//   เสริม = pool จาก mouse/timing + high-res timer (XOR-fold แบบ defense-in-depth: แข็งอย่างน้อยเท่าตัวที่ดีที่สุด)
+let SALT_SRC="", SALT_WEAK=false;   // แหล่งที่มา + ธงเตือนเมื่อ "แหล่งหลักไม่พร้อม"
+function genSalt(){
+  const out=new Uint8Array(32); let cs=false;
+  try{ if(window.crypto&&crypto.getRandomValues){ crypto.getRandomValues(out); cs=true; } }catch(e){}
+  // เสริมด้วย entropy pool (เมาส์/คีย์บอร์ด/timing) แบบ XOR
+  // หมายเหตุตรง ๆ: บนเบราว์เซอร์ที่เข้มงวด (Tor ใน Tails) performance.now()/timeStamp มักถูก "ปัดหยาบ"
+  //   เพื่อกัน timing attack → entropy จาก timing ต่ำ. แต่พิกัดเมาส์ไม่ถูกจำกัด และ getRandomValues
+  //   (เคอร์เนล CSPRNG) คือแหล่งหลักที่แข็งแรง; การ XOR กับ pool อิสระ "ทำให้แย่ลงไม่ได้" จึงปลอดภัยแม้ timing หยาบ
+  for(let i=0;i<32;i++){ out[i]=(out[i]^SALT_POOL[i]^((((performance.now()*1000)|0)>>>(i%8))&0xff))&0xff; }
+  mixPool(Date.now());
+  SALT_WEAK=!cs;
+  SALT_SRC = cs
+    ? "crypto.getRandomValues (CSPRNG ของเคอร์เนล/OS — แหล่งหลัก) XOR entropy pool (เมาส์/คีย์บอร์ด/timing — เสริม)"
+    : "entropy pool (เมาส์/คีย์บอร์ด/timing) เท่านั้น — getRandomValues ไม่พร้อมใช้งาน";
+  return out;
+}
+function saltHex(){ let h=""; for(let i=0;i<SALT.length;i++) h+=SALT[i].toString(16).padStart(2,"0"); return h; }
+function renderSaltState(){
+  const note = SALT_WEAK
+    ? '<div class="warn" style="margin-top:5px">&#9888; แหล่งสุ่มหลัก (getRandomValues) ไม่พร้อมใช้งาน — salt อาจอ่อน. แนะนำให้ขยับเมาส์ไปมาสัก 5–10 วินาทีแล้วกด re-roll หรือ <b>ปิด salt แล้วพึ่งการทอยลูกเต๋าล้วน</b></div>'
+    : '<div class="dim" style="margin-top:5px">หมายเหตุ: บนเบราว์เซอร์เข้มงวด (เช่น Tor) ค่า timing อาจถูกปัดหยาบ แต่ getRandomValues (แหล่งหลัก) ยังแข็งแรง และการ XOR กับ pool อิสระทำให้ผลลัพธ์แย่ลงไม่ได้</div>';
+  $("saltState").innerHTML=
+    '<div><span class="dot '+(SALT_WEAK?"d-y":"d-g")+'"></span><b style="color:#d7b3ff">Salt เปิดใช้งาน</b> — seed จะไม่เป็น deterministic จากลำดับการทอยเพียงอย่างเดียว</div>'+
+    '<div class="dim" style="margin-top:5px">ที่มาการสุ่ม / source: <span style="color:#c9a6ff">'+SALT_SRC+'</span></div>'+
+    note+
+    '<div class="dim" style="margin-top:5px">ค่า Salt (256-bit) — hex:</div><code class="mono">'+saltHex()+'</code>'+
+    '<div style="margin-top:7px"><button onclick="regenSalt()">&#128260; สุ่ม salt ใหม่ / re-roll</button></div>';
+}
+function onSaltToggle(){
+  if($("saltChk").checked){ if(SALT)SALT.fill(0); SALT=genSalt(); renderSaltState(); }
+  else { if(SALT)SALT.fill(0); SALT=null; $("saltState").textContent=""; }
+  recompute();
+}
+function regenSalt(){ if(SALT)SALT.fill(0); SALT=genSalt(); renderSaltState(); recompute(); }
+function saltBits(nbits){ let s=""; for(let i=0;i<nbits/8;i++) s+=SALT[i].toString(2).padStart(8,"0"); return s; }
+function xorBits(a,b){ let o=""; for(let i=0;i<a.length;i++) o+=(a[i]!==b[i])?"1":"0"; return o; }
 
 /* ==========================================================================
    ส่วนที่ 6 — RECOMPUTE (คำนวณ dashboard ทุกครั้งที่ input เปลี่ยน)
@@ -453,24 +572,30 @@ function renderEntropyAndGate(){
       `<div class="dim">ทอยต่อจนแถบ [A] เต็ม 100% / keep rolling until [A] hits 100%</div>`;
     return;
   }
-  // 100%: บิตครบเป๊ะ -> mnemonic จริง
-  const ent=bits.slice(0,target),m=buildMnemonic(ent);
+  // 100%: บิตครบเป๊ะ -> mnemonic จริง (ผสม salt แบบ XOR ถ้าผู้ใช้เปิดใช้ — คง uniform + hash-free)
+  let ent=bits.slice(0,target);
+  if(SALT) ent=xorBits(ent,saltBits(target));
+  const m=buildMnemonic(ent);
   let rows=m.groups.map((g,i)=>{const isCs=(i===m.groups.length-1);
     const eBits=isCs?g.bin.slice(0,g.bin.length-(m.CS - (m.CS%11||m.CS)) ):g.bin;
     return `<tr><td>${i+1}</td><td class="bin">${g.bin}</td><td class="dec">${g.dec}</td><td class="w">${g.word}</td></tr>`;}).join("");
   O.innerHTML=
-    `<div class="step"><b>ขั้นที่ 1 · entropy สุดท้าย / final entropy (${m.ENT} บิต)</b><br><code class="mono">${m.hex}</code></div>`+
+    `<div class="step"><b>ขั้นที่ 1 · entropy สุดท้าย / final entropy (${m.ENT} บิต)</b>${SALT?' <span class="badge b-ok">+ system salt (XOR)</span>':''}<br><code class="mono">${m.hex}</code></div>`+
     `<div class="step"><b>ขั้นที่ 2 · checksum</b> = ${m.CS} บิตแรกของ SHA-256(entropy) [pure-JS]<br>`+
       `checksum bits = <code class="cs">${m.csb}</code> <span class="dim">(ใช้ตรวจจับความผิดพลาดเท่านั้น ไม่เกี่ยวกับความปลอดภัย)</span></div>`+
     `<div class="step"><b>ขั้นที่ 3 · ต่อ entropy + checksum</b> = ${m.ENT}+${m.CS} = ${m.ENT+m.CS} บิต = ${m.groups.length}×11</div>`+
     `<div class="step"><b>ขั้นที่ 4–5 · แบ่งทีละ 11 บิต &rarr; หมายเลข (0-2047) &rarr; คำ</b> (ตรวจทานเองได้)`+
       `<table><tr><th>#</th><th>11-bit</th><th>index</th><th>word</th></tr>${rows}</table></div>`+
     `<div class="step"><b>ขั้นที่ 6 · Seed Phrase (${m.groups.length} คำ)</b><div class="mn">${m.mnemonic}</div>`+
+      `<div class="dim" style="font-size:11px;margin:4px 0">&#128374; ถ้าเปิด "กันแอบมอง" ข้อความจะเบลอ — ชี้เมาส์หรือแตะค้างเพื่อดูชั่วคราว / hover or press-and-hold to reveal</div>`+
       `<button onclick="copyMn(this,'${m.mnemonic}')">&#128203; คัดลอก / copy</button> `+
       `<div class="warn" style="margin-top:6px;font-size:11px">&#9888; Use with caution &mdash; แนะนำให้พิมพ์ mnemonic ใหม่ทีละคำด้วยตนเอง แทนการคัดลอก เพื่อป้องกันข้อมูลค้างใน clipboard บนอุปกรณ์`+
       `<span class="en">Prefer typing each word manually instead of copying, to avoid leaving the seed in the device clipboard. Clear the clipboard after use.</span></div></div>`;
 }
-function copyMn(btn,t){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
+function copyMn(btn,t){
+  // ยืนยันก่อนคัดลอก — กันกดโดยไม่ตั้งใจ และเตือนเรื่อง clipboard ค้าง
+  if(!confirm("ยืนยันคัดลอก Seed Phrase ลงคลิปบอร์ด?\n\n⚠ Seed จะค้างอยู่ในคลิปบอร์ดของอุปกรณ์จนกว่าจะถูกเขียนทับ — อย่าลืมล้างคลิปบอร์ดหลังใช้ และหลีกเลี่ยงการวางบนแอปที่ไม่ปลอดภัย\n\nConfirm copying the seed phrase to the device clipboard?")) return;
+  const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
   try{document.execCommand("copy");}catch(e){}document.body.removeChild(ta);
   if(btn){btn.innerHTML="&#10003; คัดลอกแล้ว / copied";btn.classList.add("copied");   // ✓ แจ้งผลที่ตัวปุ่ม
     setTimeout(function(){btn.innerHTML="&#128203; คัดลอก / copy";btn.classList.remove("copied");},2500);}}
