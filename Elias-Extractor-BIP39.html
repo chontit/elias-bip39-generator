@@ -20,83 +20,102 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ELIAS ENTROPY EXTRACTION TERMINAL &rarr; BIP-39</title>
 <style>
-/* ---- Dark HUD / terminal aesthetic · inline CSS ล้วน ไม่มีฟอนต์ภายนอก ---- */
-:root{--bg:#05080a;--fg:#8fe6b0;--cy:#5fd0ff;--am:#ffd24a;--rd:#ff6b6b;--gn:#4ade80;
-      --pnl:#0a1014;--brd:#15302a;--dim:#6f8a80;}
+/* ---- Terminal/HUD aesthetic · inline CSS ล้วน · ธีม Dark/Light ผ่าน CSS variables ---- */
+:root{ /* ===== DARK (ค่าเริ่มต้น) ===== */
+  --bg:#05080a;--fg:#8fe6b0;--cy:#5fd0ff;--am:#ffd24a;--rd:#ff6b6b;--gn:#4ade80;--vi:#b06bff;
+  --pnl:#0a1014;--brd:#15302a;--dim:#6f8a80;
+  --inp:#0c1418;--btn:#0f2a20;--btnbd:#2f6a4c;--btnfg:#bfffd8;--btnh:#16412f;
+  --card:#070d10;--th:#7fdca8;--lab:#7fdca8;--barbg:#0b1a14;--barlab:#eafff2;--mnfg:#ffffff;--shadow:rgba(0,0,0,.6);
+  --warnbg:#160a0a;--warnbd:#5a2020;--warnfg:#ffc9c9;--notebg:#0a1016;--notebd:#1c3a4a;--notefg:#bfe0ff;
+  --tin:#0a1822;--tbip:#1c1606;--tsalt:#170a24;--ttest:#08170f;}
+body.theme-light{ /* ===== LIGHT ===== */
+  --bg:#eef1ef;--fg:#123b33;--cy:#0b6ea6;--am:#8a5c00;--rd:#c02626;--gn:#178a44;--vi:#7a3fc0;
+  --pnl:#ffffff;--brd:#ccd6d0;--dim:#5a6f68;
+  --inp:#f6f8f7;--btn:#e6f1ea;--btnbd:#84c2a0;--btnfg:#0e3a24;--btnh:#d6ebe0;
+  --card:#f5f8f6;--th:#0e5a3a;--lab:#0e5a3a;--barbg:#dbe6df;--barlab:#0e3a24;--mnfg:#0a1f18;--shadow:rgba(0,0,0,.18);
+  --warnbg:#fff0f0;--warnbd:#e0a0a0;--warnfg:#8a1f1f;--notebg:#eef6fb;--notebd:#a9cfe6;--notefg:#12466a;
+  --tin:#e8f4fb;--tbip:#fbf3df;--tsalt:#f2eafb;--ttest:#e9f7ef;}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;
-     margin:0 auto;max-width:1080px;padding:12px;overflow-x:hidden}
-h1{font-size:17px;color:var(--cy);margin:2px 0 8px;letter-spacing:.5px}
-h2{font-size:13px;color:var(--cy);border-bottom:1px solid var(--brd);padding-bottom:4px;margin:14px 0 8px;
-   text-transform:uppercase;letter-spacing:1px}
+     margin:0 auto;max-width:1080px;padding:12px;overflow-x:hidden;transition:background .2s,color .2s}
+h1{font-size:17px;color:var(--cy);margin:2px 0 6px;letter-spacing:.5px}
+h2{font-size:13px;color:var(--cy);border-bottom:1px solid var(--brd);padding-bottom:4px;margin:0 0 8px;
+   text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;flex-wrap:wrap;gap:4px}
 .sub{color:var(--dim);font-size:11px}
-label{color:#7fdca8;display:block;margin:8px 0 2px;font-size:12px}
-select,textarea,input{background:#0c1418;color:var(--fg);border:1px solid var(--brd);
+label{color:var(--lab);display:block;margin:8px 0 2px;font-size:12px}
+select,textarea,input{background:var(--inp);color:var(--fg);border:1px solid var(--brd);
      font:13px ui-monospace,monospace;padding:6px;width:100%}
 textarea{resize:vertical;min-height:64px;word-break:break-all}
-button{background:#0f2a20;color:#bfffd8;border:1px solid #2f6a4c;padding:7px 11px;cursor:pointer;
+button{background:var(--btn);color:var(--btnfg);border:1px solid var(--btnbd);padding:7px 11px;cursor:pointer;
      font:12px ui-monospace,monospace;border-radius:3px}
-button:hover{background:#16412f}
+button:hover{background:var(--btnh)}
 button:disabled{opacity:.4;cursor:not-allowed}
-.danger{background:#3a1414;border-color:#a33;color:#ffb3b3}.danger:hover{background:#552020}
-.key{background:#10202a;border-color:#2a5a7a;color:#bfe8ff;min-width:44px;font-size:15px;padding:10px 6px}
-.key:hover{background:#173447}
+.danger{background:transparent;border-color:var(--rd);color:var(--rd)}.danger:hover{background:var(--rd);color:#fff}
 .row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:180px}
-.panel{background:var(--pnl);border:1px solid var(--brd);border-radius:5px;padding:11px;margin:10px 0}
-/* ธีมสีเฉพาะของแต่ละโซน ให้แยกกันชัดเจน */
-.p-input{border:1px solid #234b63;border-left:5px solid var(--cy);background:linear-gradient(180deg,#0a1822,var(--pnl));box-shadow:0 0 16px -8px var(--cy)}
-.p-input h2{color:var(--cy);border-bottom-color:#26506b}
-.p-input .pill{color:var(--cy);border-color:#2a5a7a}
-.p-input textarea{border-color:#2a5a7a}.p-input textarea:focus{outline:1px solid var(--cy);border-color:var(--cy)}
-.p-bip{border:1px solid #5f4a12;border-left:5px solid var(--am);background:linear-gradient(180deg,#1c1606,var(--pnl));box-shadow:0 0 16px -8px var(--am)}
-.p-bip h2{color:var(--am);border-bottom-color:#5f4a12}
-.p-bip .pill{color:var(--am);border-color:#7a5a12}
-.p-bip .step{border-left-color:var(--am);background:#12100a}
-.p-bip .step b{color:var(--am)}
-.p-bip button{background:#2a2206;border-color:var(--am);color:#ffe9a8}.p-bip button:hover{background:#3a3010}
-.p-salt{border:1px solid #5a2f7a;border-left:5px solid #b06bff;background:linear-gradient(180deg,#170a24,var(--pnl));box-shadow:0 0 20px -6px #b06bff}
-.p-salt label{color:#e0c8ff}
-.p-salt .en{color:#9a86b8}
-.p-salt code.mono{color:#e3bbff}
-.p-salt input[type=checkbox]{accent-color:#b06bff}
-.p-salt button{background:#2a1140;border-color:#b06bff;color:#ecd9ff}.p-salt button:hover{background:#3a1a58}
-.p-test{border:1px solid #215a3d;border-left:5px solid var(--gn);background:linear-gradient(180deg,#08170f,var(--pnl));box-shadow:0 0 16px -8px var(--gn)}
-.p-test h2{color:var(--gn);border-bottom-color:#215a3d}
-.p-test .pill{color:var(--gn);border-color:#2f6a4c}
-.p-test button{background:#0e2a1a;border-color:var(--gn);color:#bfffd8}.p-test button:hover{background:#15422a}
-button.copied{background:#0e2a1a !important;border-color:var(--gn) !important;color:#bfffd8 !important;font-weight:bold}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.panel{background:var(--pnl);border:1px solid var(--brd);border-radius:5px;padding:11px;margin:10px 0;position:relative}
+/* ธีมสีเฉพาะของแต่ละโซน (ขับด้วย variables จึงเปลี่ยนตามธีม) */
+.p-input{border-left:5px solid var(--cy);background:linear-gradient(180deg,var(--tin),var(--pnl));box-shadow:0 0 16px -9px var(--cy)}
+.p-input h2{color:var(--cy)}.p-input .pill{color:var(--cy);border-color:var(--cy)}
+.p-input textarea:focus{outline:1px solid var(--cy);border-color:var(--cy)}
+.p-bip{border-left:5px solid var(--am);background:linear-gradient(180deg,var(--tbip),var(--pnl));box-shadow:0 0 16px -9px var(--am)}
+.p-bip h2{color:var(--am)}.p-bip .pill{color:var(--am);border-color:var(--am)}
+.p-bip .step{border-left-color:var(--am)}.p-bip .step b{color:var(--am)}
+.p-bip button{border-color:var(--am);color:var(--am)}
+.p-salt{border-left:5px solid var(--vi);background:linear-gradient(180deg,var(--tsalt),var(--pnl));box-shadow:0 0 20px -7px var(--vi)}
+.p-salt label{color:var(--vi)}.p-salt code.mono{color:var(--vi)}
+.p-salt input[type=checkbox]{accent-color:var(--vi)}
+.p-salt button{border-color:var(--vi);color:var(--vi)}
+.p-test{border-left:5px solid var(--gn);background:linear-gradient(180deg,var(--ttest),var(--pnl));box-shadow:0 0 16px -9px var(--gn)}
+.p-test h2{color:var(--gn)}.p-test .pill{color:var(--gn);border-color:var(--gn)}
+.p-test button{border-color:var(--gn);color:var(--gn)}
+button.copied{border-color:var(--gn) !important;color:var(--gn) !important;font-weight:bold}
 .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:3px;margin:2px 2px 2px 0}
-.b-ok{background:#063d24;color:#8affc0}.b-bad{background:#4a0d0d;color:#ffb3b3}.b-warn{background:#4a3a06;color:var(--am)}
+.b-ok{background:var(--gn);color:#04120b}.b-bad{background:var(--rd);color:#fff}.b-warn{background:var(--am);color:#1a1400}
 #eng{font-size:12px;padding:4px 9px;border-radius:4px;display:inline-block}
-.ok{background:#063d24;color:#9fffc4}.bad{background:#5a0d0d;color:#ffcccc}
+.ok{background:var(--gn);color:#04120b}.bad{background:var(--rd);color:#fff}
 /* progress bars */
-.bar{height:22px;background:#0b1a14;border:1px solid var(--brd);border-radius:4px;overflow:hidden;position:relative;margin:4px 0}
+.bar{height:22px;background:var(--barbg);border:1px solid var(--brd);border-radius:4px;overflow:hidden;position:relative;margin:4px 0}
 .fill{height:100%;width:0;transition:width .15s;background:linear-gradient(90deg,#0f7a4a,#3ddc84)}
-.fill.q{background:linear-gradient(90deg,#7a5a0f,#ffd24a)}
-.bar .lab{position:absolute;left:8px;top:2px;font-size:11px;color:#eafff2;text-shadow:0 0 3px #000}
+.fill.q{background:linear-gradient(90deg,#b58a1a,#ffd24a)}
+.bar .lab{position:absolute;left:8px;top:2px;font-size:11px;color:var(--barlab);text-shadow:0 0 3px var(--shadow)}
 .mono{color:var(--am);word-break:break-all}
 .hist{display:flex;align-items:flex-end;gap:2px;height:80px;border-bottom:1px solid var(--brd);margin-top:6px}
-.hist .col{flex:1;background:#1f6b4a;min-height:1px;position:relative}
+.hist .col{flex:1;background:var(--gn);min-height:1px;position:relative;opacity:.8}
 .hist .col span{position:absolute;bottom:-16px;left:0;right:0;text-align:center;font-size:9px;color:var(--dim)}
 .lights{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
-.light{flex:1;min-width:150px;border:1px solid var(--brd);border-radius:4px;padding:7px 9px;background:#0b1418}
+.light{flex:1;min-width:150px;border:1px solid var(--brd);border-radius:4px;padding:7px 9px;background:var(--card)}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .d-g{background:var(--gn);box-shadow:0 0 6px var(--gn)}.d-y{background:var(--am);box-shadow:0 0 6px var(--am)}
 .d-r{background:var(--rd);box-shadow:0 0 6px var(--rd)}
-.step{border:1px solid var(--brd);border-left:3px solid var(--cy);padding:8px 10px;margin:8px 0;background:#070d10}
+.step{border:1px solid var(--brd);border-left:3px solid var(--cy);padding:8px 10px;margin:8px 0;background:var(--card)}
 .step b{color:var(--cy)}
 table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px}
-td,th{border:1px solid var(--brd);padding:3px 5px;text-align:left}th{color:#7fdca8}
-.bin{color:var(--fg);word-break:break-all;overflow-wrap:anywhere}.cs{color:#ff8a3a;font-weight:bold;word-break:break-all}.dec{color:var(--cy)}.w{color:#fff}
+td,th{border:1px solid var(--brd);padding:3px 5px;text-align:left}th{color:var(--th)}
+.bin{color:var(--fg);word-break:break-all;overflow-wrap:anywhere}.cs{color:#ff8a3a;font-weight:bold;word-break:break-all}.dec{color:var(--cy)}.w{color:var(--mnfg)}
 code{overflow-wrap:anywhere}
-.mn{color:#fff;font-size:15px;letter-spacing:.4px;line-height:1.9}
+.mn{color:var(--mnfg);font-size:15px;letter-spacing:.4px;line-height:1.9}
 .err{color:var(--rd)}.warn{color:var(--am)}.dim{color:var(--dim)}
 .en{color:var(--dim);font-size:11px;display:block}
-.warnbox{background:#160a0a;border:1px solid #5a2020;color:#ffc9c9;padding:9px 11px;border-radius:5px;font-size:12px}
-.note{background:#0a1016;border:1px solid #1c3a4a;color:#bfe0ff;padding:9px 11px;border-radius:5px;font-size:12px}
+.warnbox{background:var(--warnbg);border:1px solid var(--warnbd);color:var(--warnfg);padding:9px 11px;border-radius:5px;font-size:12px}
+.note{background:var(--notebg);border:1px solid var(--notebd);color:var(--notefg);padding:9px 11px;border-radius:5px;font-size:12px}
 footer{text-align:center;color:var(--dim);margin-top:22px;padding-top:10px;border-top:1px solid var(--brd);font-size:11px}
-kbd{background:#10202a;border:1px solid #2a5a7a;border-radius:3px;padding:0 4px;color:#bfe8ff}
-.pill{font-size:10px;color:var(--dim);border:1px solid var(--brd);border-radius:10px;padding:1px 7px;margin-left:6px}
+.pill{font-size:10px;color:var(--dim);border:1px solid var(--brd);border-radius:10px;padding:1px 7px;margin-left:6px;text-transform:none;letter-spacing:0}
+/* ===== Tooltip balloon (ⓘ) — เผยเมื่อ hover หรือคลิก ===== */
+.info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;min-width:16px;
+  border:1px solid var(--brd);border-radius:50%;color:var(--dim);font-size:11px;line-height:1;cursor:pointer;
+  position:relative;margin-left:6px;vertical-align:middle;text-transform:none;letter-spacing:0;font-weight:normal}
+.info:hover,.info:focus{color:var(--cy);border-color:var(--cy);outline:none}
+/* popover: ลอยใกล้ไอคอน (JS กำหนดพิกัดแบบ clamp ในจอ) · position:fixed จึงไม่ดันเลย์เอาต์/ไม่หลุดขอบ */
+.info .tip{display:none;position:fixed;z-index:9999;top:60px;left:12px;
+  width:min(94vw,380px);max-height:70vh;overflow:auto;
+  background:var(--pnl);border:1px solid var(--brd);border-left:3px solid var(--cy);border-radius:9px;
+  padding:11px 13px;color:var(--fg);font-size:12px;font-weight:normal;line-height:1.65;text-align:left;
+  box-shadow:0 10px 40px -6px var(--shadow);white-space:normal;letter-spacing:0;text-transform:none;cursor:auto}
+.info .tip b{color:var(--cy)}
+.info:hover .tip,.info:focus .tip,.info.open .tip{display:block}
+/* ปุ่มสลับธีม */
+#themeBtn{flex:0 0 auto;font-size:11px;white-space:nowrap;padding:6px 8px}
 /* กันแอบมอง (shoulder-surfing): เบลอข้อมูลลับ เผยเมื่อชี้เมาส์/แตะค้าง */
 body.privacy .mn,body.privacy .mono,body.privacy code.bin,
 body.privacy td.bin,body.privacy td.dec,body.privacy td.w{filter:blur(5px);cursor:pointer;transition:filter .12s}
@@ -109,22 +128,27 @@ body.privacy tr:hover td.bin,body.privacy tr:hover td.dec,body.privacy tr:hover 
 body.privacy tr:active td.bin,body.privacy tr:active td.dec,body.privacy tr:active td.w{filter:none}
 </style></head><body class="privacy">
 
-<h1>&#9670; Elias Extractor &rarr; BIP-39 Seed Generator</h1>
-<div class="sub">เปลี่ยนการทอยลูกเต๋า/เหรียญที่อาจมี bias ให้เป็น entropy ที่กระจายสม่ำเสมอแบบพิสูจน์ได้ &middot; ใช้ Elias extractor &middot; ไม่ใช้ hash ในการสร้าง entropy &middot; ทำงานออฟไลน์ 100%
-<br><span class="en">Turns biased dice or coin tosses into provably uniform entropy · Elias extractor · no hashing in the entropy path · fully offline.</span>
-<span class="pill">ใช้บน Tails / air-gapped เท่านั้น</span></div>
+<div class="topbar">
+  <div style="flex:1;min-width:0">
+    <h1>&#9670; Elias Extractor &rarr; BIP-39 Seed Generator</h1>
+    <div class="sub">เปลี่ยนการทอยลูกเต๋า/เหรียญที่อาจมี bias &rarr; entropy สม่ำเสมอแบบพิสูจน์ได้ &middot; ออฟไลน์ 100%
+      <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">แปลงการทอยที่อาจมี bias ให้เป็น entropy ที่กระจายสม่ำเสมอแบบพิสูจน์ได้ ด้วย Elias extractor (คณิตศาสตร์การจัดหมู่ล้วน ไม่ใช้ hash ในการสร้าง entropy) ทำงานออฟไลน์ 100% ไฟล์เดียว<span class="en">Turns biased dice or coin tosses into provably uniform entropy via the Elias extractor (pure combinatorics, no hashing in the entropy path). Fully offline, single file.</span></span></span>
+      <span class="pill">Tails / air-gapped เท่านั้น</span></div>
+  </div>
+  <button id="themeBtn" onclick="cycleTheme()">&#9681; ธีม / Theme</button>
+</div>
 <div style="margin:8px 0"><span id="eng">สถานะระบบ: กำลังเริ่มต้น… / starting up…</span></div>
 
 <!-- คำเตือนความปลอดภัย / Safety warnings -->
 <div class="warnbox" style="margin:10px 0">
-&#9888; <b>ข้อควรระวังด้านความปลอดภัย — อ่านก่อนใช้งานจริง / Safety checklist — read before real use</b>
-<span class="en">Your security is your own responsibility.</span>
-<ul style="margin:6px 0 0 18px;padding:0">
-<li>ใช้บน <b>Tails OS</b> แบบ <b>air-gapped</b> — ตัดเน็ต ปิด Wi-Fi/LAN ทั้งหมด (Tails ไม่เก็บข้อมูลค้างไว้โดยค่าเริ่มต้น)<span class="en">Run on air-gapped Tails OS; disconnect all networks (Wi-Fi/LAN). Tails stores nothing by default.</span></li>
-<li>ระวังคนมองข้ามไหล่และกล้องรอบตัว — <b>ห้ามแคปหน้าจอหรือถ่ายรูป seed</b> เด็ดขาด<span class="en">Watch for shoulder-surfing and nearby cameras. Never screenshot or photograph the seed.</span></li>
-<li>ก่อนโอนเงินจริง ให้ <b>ตรวจสอบ mnemonic ซ้ำบน hardware wallet อีกเครื่อง (offline)</b> เสมอ<span class="en">Before moving any funds, always re-check the mnemonic on a separate offline hardware wallet.</span></li>
-<li>ใช้เสร็จแล้วปิดไฟล์และรีสตาร์ต Tails เพื่อล้างข้อมูลในหน่วยความจำ (RAM)<span class="en">When finished, close the file and restart Tails to clear memory (RAM).</span></li>
-</ul>
+&#9888; <b>ความปลอดภัย (สำคัญ):</b> ใช้บน <b>Tails air-gapped</b> &middot; <b>ห้ามแคป/ถ่ายรูป seed</b> &middot; ตรวจ mnemonic ซ้ำบน wallet อีกเครื่อง &middot; ปิดแล้ว<b>รีสตาร์ต Tails ล้าง RAM</b>
+<span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">
+<b>อ่านก่อนใช้จริง / Read before real use</b><br>
+&bull; ใช้บน <b>Tails OS</b> แบบ air-gapped — ตัดเน็ต ปิด Wi-Fi/LAN ทั้งหมด<span class="en">Run on air-gapped Tails; disconnect all networks.</span>
+&bull; ระวังคนมองข้ามไหล่/กล้อง — <b>ห้ามแคปหน้าจอหรือถ่ายรูป seed</b><span class="en">Beware shoulder-surfing & cameras; never screenshot the seed.</span>
+&bull; ก่อนโอนเงินจริง ตรวจ mnemonic ซ้ำบน <b>hardware/software wallet อีกเครื่อง (offline)</b><span class="en">Re-verify the mnemonic on a separate offline wallet before funding.</span>
+&bull; ใช้เสร็จ ปิดไฟล์ + <b>รีสตาร์ต Tails เพื่อล้าง RAM</b><span class="en">When done, close & restart Tails to clear RAM.</span>
+</span></span>
 </div>
 
 <div class="row">
@@ -145,25 +169,24 @@ body.privacy tr:active td.bin,body.privacy tr:active td.dec,body.privacy tr:acti
 
 <!-- System Entropy (Salt) — ทางเลือก / optional -->
 <div class="panel p-salt">
-  <label style="cursor:pointer;font-size:13px"><input type="checkbox" id="saltChk" onchange="onSaltToggle()" style="width:auto;margin-right:7px;vertical-align:middle"> &#129482; ผสม System Entropy (Salt) เพิ่ม / add optional system-entropy salt</label>
-  <div class="dim" style="font-size:11px">ปกติ seed สร้างจากลำดับการทอยแบบตายตัว (deterministic) — หากมีคนแอบจดลำดับการทอย หรือมี keylogger ก็สร้าง seed เดิมซ้ำได้. เปิดตัวเลือกนี้เพื่อ <b>ผสมความสุ่มจากเครื่อง (XOR)</b> ทำให้ seed ขึ้นกับทั้งลูกเต๋าและการสุ่มของเครื่อง จึงทำซ้ำจาก log การทอยเพียงอย่างเดียวไม่ได้ · ยังคง uniform และ hash-free · <b>ค่าเริ่มต้นปิด</b> เพื่อคงเส้นทางที่พิสูจน์ได้จากลูกเต๋าล้วน
-    <span class="en">By default the seed is deterministic from your rolls; anyone who records the roll sequence could reproduce it. Enable this to XOR in system randomness so the seed depends on both the dice and the machine — it can no longer be reproduced from a roll log alone. Still uniform and hash-free. Off by default.</span></div>
+  <label style="cursor:pointer;font-size:13px"><input type="checkbox" id="saltChk" onchange="onSaltToggle()" style="width:auto;margin-right:7px;vertical-align:middle"> &#129482; ผสม System Entropy (Salt) — seed ไม่ deterministic จากลูกเต๋าอย่างเดียว</label>
+  <div class="dim" style="font-size:11px;margin-top:3px">ทำไมต้องใช้ / เมื่อไรควรเปิด
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">ปกติ seed สร้างจากลำดับการทอยแบบตายตัว (deterministic) — หากมีคนแอบจดลำดับการทอยหรือมี keylogger ก็สร้าง seed เดิมซ้ำได้. เปิดตัวเลือกนี้เพื่อผสมความสุ่มจากเครื่อง (XOR) ทำให้ seed ขึ้นกับทั้งลูกเต๋าและการสุ่มของเครื่อง จึงทำซ้ำจาก log การทอยอย่างเดียวไม่ได้ · ยังคง uniform และ hash-free · ค่าเริ่มต้นปิด<span class="en">By default the seed is deterministic from your rolls. Enable to XOR in system randomness so the seed depends on both dice and machine — not reproducible from a roll log alone. Still uniform & hash-free. Off by default.</span></span></span></div>
   <div id="saltState" class="dim" style="margin-top:6px"></div>
 </div>
 
 <!-- กล่องอธิบาย Elias -->
 <div class="note">
-&#9432; <b>Elias extractor คืออะไร?</b> มันดูที่ <b>"อันดับของการเรียงลำดับ" (rank ภายใน type)</b> ไม่ใช่ค่าหน้าที่ทอยออกมา &mdash;
-ภายใต้สมมติฐาน i.i.d. ทุกลำดับที่มีจำนวนนับของแต่ละสัญลักษณ์เท่ากันจะมีโอกาสเกิดเท่ากัน ดังนั้น <b>ความเอนเอียง (bias) จึงหักล้างกันเอง</b>
-เหลือค่าที่ <b>กระจายสม่ำเสมอจริง ๆ</b> แล้วค่อยแปลงเป็นบิต ใช้ <b>คณิตศาสตร์การจัดหมู่ล้วน (BigInt) ไม่มี hash</b>.
-<span class="en">What is the Elias extractor? It looks at the <b>rank of the ordering</b> (within a type), not the face values you rolled. Under the i.i.d. assumption, every sequence with the same symbol counts is equally likely, so bias cancels out &mdash; leaving a truly uniform value that is then turned into unbiased bits. Pure combinatorics (BigInt), no hashing.</span>
+&#9432; <b>Elias extractor คืออะไร?</b> ใช้ "อันดับการเรียงลำดับ" (rank) ไม่ใช่ค่าที่ทอย &rarr; bias หักล้างกันเอง เหลือค่าสม่ำเสมอจริง · combinatorics ล้วน ไม่มี hash
+<span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">
+ภายใต้สมมติฐาน i.i.d. ทุกลำดับที่มีจำนวนนับของแต่ละสัญลักษณ์เท่ากันจะมีโอกาสเกิดเท่ากัน ดังนั้นความเอนเอียง (bias) หักล้างกันด้วยความสมมาตร เหลืออันดับที่กระจายสม่ำเสมอ แล้วแปลงเป็นบิตปราศจากอคติ ใช้คณิตศาสตร์การจัดหมู่ล้วน (BigInt) ไม่มี hash
+<span class="en">Under i.i.d., all sequences with the same symbol counts are equally likely, so bias cancels by symmetry, leaving a uniform rank decoded into unbiased bits. Pure combinatorics (BigInt), no hashing.</span></span></span>
 </div>
 
 <!-- INPUT -->
 <div class="panel p-input">
-  <h2>1 &middot; ป้อนการทอย / Input rolls <span id="alphaLbl" class="pill"></span></h2>
-  <div class="dim" style="font-size:11px;margin-bottom:4px">พิมพ์ในช่องด้านล่างเท่านั้น &middot; ช่องจะรับเฉพาะสัญลักษณ์ของแหล่งที่เลือก จึงกันพิมพ์ผิดให้อัตโนมัติ &middot; ระบบเก็บลำดับการทอยตามเวลา &middot; แนะนำให้ทอยเกินเป้าหมายไว้เล็กน้อย
-    <span class="en">Type in the box below (keyboard only). It accepts only the symbols for the source you picked, so typos are blocked automatically. Your rolls are recorded in order &mdash; rolling slightly past the target is recommended.</span></div>
+  <h2>1 &middot; ป้อนการทอย / Input rolls <span id="alphaLbl" class="pill"></span>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">พิมพ์ในช่องด้านล่างเท่านั้น · ช่องรับเฉพาะสัญลักษณ์ของแหล่งที่เลือก (กันพิมพ์ผิดอัตโนมัติ) · ระบบเก็บลำดับการทอยตามเวลา · แนะนำให้ทอยเกินเป้าหมายเล็กน้อย<span class="en">Keyboard only. The field accepts only the selected source's symbols (typo-proof). Rolls are recorded in order; rolling slightly past the target is recommended.</span></span></span></h2>
   <textarea id="inp" oninput="onInput()" placeholder="พิมพ์ที่นี่ / type here — ตัวอย่าง/e.g.  A3F0 9C1D 7E2B"></textarea>
   <div class="row" style="margin-top:8px">
     <div style="flex:0"><button class="danger" onclick="wipe()">&#128465; ล้างทั้งหมด / WIPE (เคลียร์ RAM)</button></div>
@@ -386,13 +409,43 @@ function onInput(){
     } else if(i<pos) removed++;                                 // ตัดอักขระนอกชุด + ปรับตำแหน่งเคอร์เซอร์
   }
   if(out!==raw){ el.value=out; const np=pos-removed; try{el.setSelectionRange(np,np);}catch(e){} }
-  recompute();
-  if(capped) $("valMsg").textContent="ถึงเพดาน "+MAX_SEQ+" สัญลักษณ์ (กันการค้าง) / reached "+MAX_SEQ+"-symbol cap";
+  scheduleRecompute(capped?("ถึงเพดาน "+MAX_SEQ+" สัญลักษณ์ (กันการค้าง) / reached "+MAX_SEQ+"-symbol cap"):null);
 }
+let RECOMP_T=null;
+// debounce: การ sanitize อักขระเกิดทันที (ช่องตอบสนองไว) แต่หน่วงการคำนวณหนัก (BigInt/Elias)
+// ระหว่างพิมพ์รัว ๆ ไม่ให้ยิง recompute ทุกตัวอักษร → กัน UI lag/freeze บนเครื่องทรัพยากรจำกัด
+function scheduleRecompute(msg){ if(RECOMP_T) clearTimeout(RECOMP_T);
+  RECOMP_T=setTimeout(function(){ RECOMP_T=null; recompute(); if(msg) $("valMsg").textContent=msg; },110); }
 function backspace(){$("inp").value=$("inp").value.slice(0,-1);recompute();}
 // กันแอบมอง (shoulder-surfing): เบลอข้อมูลลับ (seed/entropy/hex/คำ) จนกว่าจะชี้เมาส์หรือแตะค้าง
 function togglePrivacy(btn){const on=document.body.classList.toggle("privacy");
   btn.innerHTML=on?"&#128374; กันแอบมอง: เปิด":"&#128374; กันแอบมอง: ปิด";}
+/* ===== ธีม Dark/Light (เลือกเอง + อัตโนมัติตามระบบ) — in-memory ไม่มี storage ===== */
+let THEME="dark";                 // 'dark' | 'light' — ตั้งค่าเริ่มต้นจากระบบตอน boot()
+const MQ=(typeof window!=="undefined"&&window.matchMedia)?window.matchMedia("(prefers-color-scheme: light)"):null;
+function systemLight(){ return MQ?MQ.matches:false; }
+function applyTheme(){
+  const light = THEME==="light";
+  document.body.classList.toggle("theme-light", light);
+  const b=$("themeBtn"); if(b) b.innerHTML = light ? "&#9728; สว่าง" : "&#9790; มืด";
+}
+function cycleTheme(){ THEME = (THEME==="light")?"dark":"light"; applyTheme(); }   // สลับมืด/สว่างเท่านั้น
+/* ===== tooltip balloon: คลิกสลับเปิด/ปิด · hover ก็เผยได้ · ลอยใกล้ไอคอน + clamp ในจอ ===== */
+function positionTip(info){
+  const tip=info.querySelector&&info.querySelector(".tip"); if(!tip) return;
+  const r=info.getBoundingClientRect();
+  const tw=tip.offsetWidth||Math.min(window.innerWidth*0.94,380), th=tip.offsetHeight||0;
+  const vw=window.innerWidth, vh=window.innerHeight, m=8;
+  let left=r.left; if(left+tw>vw-m) left=vw-tw-m; if(left<m) left=m;          // clamp แนวนอน
+  let top=r.bottom+6; if(th && top+th>vh-m) top=Math.max(m, r.top-th-6);      // ล่างไม่พอ → ขึ้นบน
+  tip.style.left=left+"px"; tip.style.top=top+"px"; tip.style.right="auto"; tip.style.bottom="auto"; tip.style.transform="none";
+}
+function toggleTip(el){ const open=el.classList.contains("open");
+  const l=document.querySelectorAll(".info.open"); for(let i=0;i<l.length;i++) l[i].classList.remove("open");
+  if(!open){ el.classList.add("open"); positionTip(el); } }
+try{ document.addEventListener("click",function(e){
+  if(!(e.target.closest&&e.target.closest(".info"))){ const l=document.querySelectorAll(".info.open"); for(let i=0;i<l.length;i++) l[i].classList.remove("open"); }
+}); }catch(e){}
 function wipe(){
   // เขียนทับข้อมูลใน memory ด้วย 0 ก่อนปล่อย reference. หมายเหตุ: JS การันตี physical RAM ไม่ได้ 100%
   // (GC + string เป็น immutable) — จึงบังคับ overwrite buffer ที่เขียนได้ให้เป็นบิต 0 ทั้งหมด แล้วแนะนำรีสตาร์ต Tails
@@ -434,6 +487,10 @@ function mixPool(v){ v=(v>>>0);
   POOL_I=(POOL_I+1)%32; }
 try{ document.addEventListener("mousemove",e=>mixPool((e.clientX*40503)^(e.clientY*65537)^((performance.now()*1000)|0)),{passive:true});
      document.addEventListener("keydown", e=>mixPool(((e.timeStamp*1000)|0)^0x9e3779b9),{passive:true}); }catch(e){}
+// รองรับอุปกรณ์ทัชสกรีน/ปากกา (กรณีไม่มีเมาส์): เก็บ entropy จาก touch/pointer ด้วย
+try{ document.addEventListener("touchmove",e=>{const t=e.touches&&e.touches[0]; if(t) mixPool((t.clientX*40503)^(t.clientY*65537)^((performance.now()*1000)|0));},{passive:true});
+     document.addEventListener("touchstart",()=>mixPool(((performance.now()*1000)|0)^0x85ebca6b),{passive:true});
+     document.addEventListener("pointermove",e=>mixPool(((e.clientX|0)*2654435761)^((e.clientY|0)*40503)^((performance.now()*1000)|0)),{passive:true}); }catch(e){}
 // สร้าง salt 32 ไบต์: หลัก = crypto.getRandomValues (ใช้ได้ใน file:// ไม่ต้อง secure context, ต่างจาก crypto.subtle)
 //   เสริม = pool จาก mouse/timing + high-res timer (XOR-fold แบบ defense-in-depth: แข็งอย่างน้อยเท่าตัวที่ดีที่สุด)
 let SALT_SRC="", SALT_WEAK=false;   // แหล่งที่มา + ธงเตือนเมื่อ "แหล่งหลักไม่พร้อม"
@@ -642,11 +699,29 @@ function runSelfTest(){
     `<div style="margin-top:8px"><b>${pass}/${R.length} PASS</b> ${pass===R.length?'<span class="badge b-ok">ผ่านครบทุกข้อ — ใช้งานระบบได้</span>':'<span class="badge b-bad">มีข้อไม่ผ่าน — อย่าใช้งาน</span>'}</div>`;
   return pass===R.length;
 }
+// ปุ่ม "รันการตรวจสอบ" ให้มี feedback ชัดเจนว่ากดแล้วทำงาน (กันความรู้สึก "กดแล้วเงียบ")
+function runTestsClick(btn){
+  btn.disabled=true; btn.innerHTML="&#9203; กำลังตรวจสอบ… / running…";
+  setTimeout(function(){                        // หน่วงเล็กน้อยให้ปุ่มรีเฟรชก่อนคำนวณ
+    const ok=runSelfTest();
+    const r=$("stResult");                       // flash ที่กล่องผลลัพธ์
+    if(r){ r.style.transition="none"; r.style.boxShadow="0 0 0 2px var(--gn)";
+      setTimeout(function(){ r.style.transition="box-shadow .6s"; r.style.boxShadow="none"; },60); }
+    btn.disabled=false;
+    btn.innerHTML = ok ? "&#10003; ตรวจสอบเสร็จ — ผ่านทั้งหมด / done" : "&#10007; พบข้อไม่ผ่าน / failed";
+    btn.classList.toggle("copied", ok);          // ใช้สไตล์เขียวเดียวกับปุ่มคัดลอกเมื่อสำเร็จ
+    setTimeout(function(){ btn.innerHTML="&#9654; รันการตรวจสอบ / Run tests"; btn.classList.remove("copied"); },2600);
+  },60);
+}
 
 /* ==========================================================================
    ส่วนที่ 9 — BOOT
    ========================================================================== */
 function boot(){
+  THEME = systemLight() ? "light" : "dark";   // ตอนโหลด: เลือกธีมอัตโนมัติตามระบบ (จากนั้นผู้ใช้สลับเองได้)
+  applyTheme();
+  // วางตำแหน่ง tooltip ให้ใกล้ไอคอนเมื่อ hover (เดสก์ท็อป)
+  try{ document.querySelectorAll(".info").forEach(function(el){ el.addEventListener("mouseenter",function(){ positionTip(el); }); }); }catch(e){}
   // ตรวจ wordlist ตอน load — ถ้าไม่ครบ 2048 ให้ error แดง + ปิดการสร้าง seed
   if(!WL_OK){
     $("eng").className="bad";
@@ -668,18 +743,16 @@ function boot(){
 
 <!-- [A] PRIMARY: ความคืบหน้า Entropy (เกณฑ์ตัดสิน "ครบหรือยัง") -->
 <div class="panel">
-  <h2>[A] &middot; ความคืบหน้า entropy / Entropy progress <span class="pill">หลัก &middot; ตัวชี้ขาด</span></h2>
-  <div class="dim" style="font-size:11px">= (บิตสม่ำเสมอที่ Elias สกัดได้) / (เป้าหมาย). <b>นี่คือเกณฑ์เดียวที่ใช้ตัดสินว่า "ครบหรือยัง"</b> ไม่ใช่การวัดความเอนเอียง.
-    <span class="en">The only "are we done yet" gauge: uniform bits from Elias / target. Not a bias measure.</span></div>
+  <h2>[A] &middot; ความคืบหน้า entropy / Entropy progress <span class="pill">หลัก &middot; ตัวชี้ขาด</span>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">= (บิตสม่ำเสมอที่ Elias สกัดได้) / (เป้าหมาย). นี่คือเกณฑ์เดียวที่ใช้ตัดสินว่า "ครบหรือยัง" ไม่ใช่การวัดความเอนเอียง.<span class="en">The only "are we done yet" gauge: uniform bits from Elias / target. Not a bias measure.</span></span></span></h2>
   <div class="bar"><div id="fillA" class="fill"></div><div id="labA" class="lab">0 / 0</div></div>
   <div id="aNums" class="dim"></div>
 </div>
 
 <!-- [B] DIAGNOSTIC: คุณภาพ/ประสิทธิภาพแหล่ง input -->
 <div class="panel">
-  <h2>[B] &middot; คุณภาพและประสิทธิภาพของแหล่ง / Source quality &amp; efficiency <span class="pill">ตัวช่วยวินิจฉัย &middot; ดูคุณภาพเต๋า</span></h2>
-  <div class="dim" style="font-size:11px">ประสิทธิภาพ = บิตที่ได้ / จำนวนครั้งที่ทอย เทียบกับค่าสูงสุดตามทฤษฎี. ยิ่งเข้าใกล้ค่าสูงสุด = แหล่งยิ่งดี; ค่าต่ำแปลว่าเต๋าเบี้ยว ต้องทอยเพิ่ม.
-    <span class="en">Efficiency = bits obtained / rolls, compared with the theoretical maximum. This is a diagnostic, not a security guarantee.</span></div>
+  <h2>[B] &middot; คุณภาพและประสิทธิภาพของแหล่ง / Source quality &amp; efficiency <span class="pill">ตัวช่วยวินิจฉัย</span>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">ประสิทธิภาพ = บิตที่ได้ / จำนวนครั้งที่ทอย เทียบกับค่าสูงสุดตามทฤษฎี. ยิ่งเข้าใกล้ค่าสูงสุด = แหล่งยิ่งดี; ค่าต่ำแปลว่าเต๋าเบี้ยว ต้องทอยเพิ่ม.<span class="en">Efficiency = bits obtained / rolls vs. the theoretical maximum. A diagnostic, not a security guarantee.</span></span></span></h2>
   <div class="bar"><div id="fillB" class="fill q"></div><div id="labB" class="lab">—</div></div>
   <div class="dim" style="font-size:11px;margin-top:10px">ความถี่ที่แต่ละสัญลักษณ์ออก / how often each symbol appears:</div>
   <div id="hist" class="hist"></div>
@@ -688,20 +761,16 @@ function boot(){
 
 <!-- [C] i.i.d. Health Monitor -->
 <div class="panel">
-  <h2>[C] &middot; ตรวจความเป็นอิสระของการทอย (i.i.d.) / i.i.d. health monitor <span class="pill">ด่านกันพลาด &middot; สำคัญ</span></h2>
-  <div class="dim" style="font-size:11px">คอยดูว่าการทอยแต่ละครั้งสัมพันธ์กันผิดปกติหรือไม่ — ถ้าไม่เป็นอิสระต่อกัน (i.i.d. พัง) ผลลัพธ์อาจไม่สม่ำเสมอจริง.
-    <span class="en">Checks whether your rolls are unusually related to each other. If they aren't independent, the output may not be truly uniform.</span></div>
+  <h2>[C] &middot; ตรวจความเป็นอิสระของการทอย (i.i.d.) / i.i.d. health monitor <span class="pill">ด่านกันพลาด</span>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">คอยดูว่าการทอยแต่ละครั้งสัมพันธ์กันผิดปกติหรือไม่ — ถ้าไม่เป็นอิสระต่อกัน (i.i.d. พัง) ผลลัพธ์อาจไม่สม่ำเสมอจริง.<span class="en">Checks whether your rolls are unusually related. If they aren't independent, the output may not be truly uniform.</span></span></span></h2>
   <div id="cLights" class="lights"></div>
   <div id="cVerdict" style="margin-top:4px"></div>
 </div>
 
 <!-- ป้ายกำกับบังคับ: แยกความหมาย A vs B vs C -->
 <div class="note" style="font-size:11px">
-&#9432; <b>สรุปความหมายแต่ละแถบ:</b> &nbsp;<b>[A]</b> = "ครบหรือยัง" (ดูจาก Elias เท่านั้น) &middot;
-<b>[B]</b> = "คุณภาพเต๋า/ประสิทธิภาพ" &middot; <b>[C]</b> = "การทอยเป็นอิสระต่อกันไหม".
-ความสม่ำเสมอมาจาก <b>Elias ภายใต้สมมติฐาน i.i.d.</b> — ส่วน [B]/[C] เป็นแค่ <b>ตัวช่วยวินิจฉัย ไม่ใช่ใบรับรองความปลอดภัย</b>.
-<b>อย่าตีความค่าสถิติเหล่านี้ว่า "ปลอดภัย/100%"</b> (กันการเข้าใจผิดว่ามั่นใจเกินจริง).
-<span class="en">[A] = completeness (from Elias only) · [B] = dice quality/efficiency · [C] = independence of rolls. Uniformity comes from Elias under the i.i.d. assumption; [B]/[C] are diagnostics, not security certificates. Never read "secure/100%" from these numbers.</span>
+&#9432; <b>สรุปแต่ละแถบ:</b> [A]=ครบหรือยัง &middot; [B]=คุณภาพเต๋า &middot; [C]=อิสระต่อกันไหม
+<span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">ความสม่ำเสมอมาจาก Elias ภายใต้สมมติฐาน i.i.d. — ส่วน [B]/[C] เป็นแค่ตัวช่วยวินิจฉัย ไม่ใช่ใบรับรองความปลอดภัย. อย่าตีความค่าสถิติว่า "ปลอดภัย/100%".<span class="en">Uniformity comes from Elias under the i.i.d. assumption; [B]/[C] are diagnostics, not security certificates. Never read "secure/100%" from these numbers.</span></span></span>
 </div>
 
 <!-- Entropy สุดท้าย -->
@@ -718,11 +787,9 @@ function boot(){
 
 <!-- SELF-TEST -->
 <div class="panel p-test">
-  <h2>ชุดตรวจสอบตัวเอง / Self-test <span class="pill">Don't Trust, Verify</span></h2>
-  <div class="dim" style="font-size:11px">รันการพิสูจน์ทั้งหมด: Elias round-trip + uniformity (ทดสอบด้วยอินพุตที่เบี้ยวหนัก), ตัวตรวจ i.i.d. จับความสัมพันธ์,
-    SHA-256 (ค่าอ้างอิงมาตรฐาน), และ BIP-39 test vectors (128/256). ควรผ่านครบทุกข้อก่อนเชื่อถือ.
-    <span class="en">Runs automatically at startup; click to run the full test suite again.</span></div>
-  <div style="margin:8px 0"><button onclick="runSelfTest()">&#9654; รันการตรวจสอบ / Run tests</button></div>
+  <h2>ชุดตรวจสอบตัวเอง / Self-test <span class="pill">Don't Trust, Verify</span>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">รันการพิสูจน์ทั้งหมด: Elias round-trip + uniformity (ทดสอบด้วยอินพุตเบี้ยวหนัก), ตัวตรวจ i.i.d. จับความสัมพันธ์, SHA-256 (ค่าอ้างอิงมาตรฐาน), และ BIP-39 test vectors (128/256). ควรผ่านครบทุกข้อก่อนเชื่อถือ.<span class="en">Runs at startup; click to run the full suite again.</span></span></span></h2>
+  <div style="margin:8px 0"><button id="testBtn" onclick="runTestsClick(this)">&#9654; รันการตรวจสอบ / Run tests</button></div>
   <div id="stResult"></div>
 </div>
 
