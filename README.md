@@ -1,5 +1,6 @@
 # Elias Extractor -> BIP39 Seed Generator
 
+![Version](https://img.shields.io/badge/Version-3.1.0-blueviolet?style=for-the-badge)
 ![Offline](https://img.shields.io/badge/Status-100%25%20Offline-success?style=for-the-badge)
 ![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-blue?style=for-the-badge)
 ![Combinatorics](https://img.shields.io/badge/Entropy-Combinatorics-critical?style=for-the-badge)
@@ -8,56 +9,111 @@
 **🌐 Live Demo / ลองใช้งานออนไลน์:** [Elias-Extractor-BIP39.html](https://chontit.github.io/elias-bip39-generator/Elias-Extractor-BIP39.html)
 *(คำเตือน: เวอร์ชันออนไลน์มีไว้เพื่อการทดสอบ UI และการทำงานเท่านั้น ห้ามใช้สร้าง Seed สำหรับเก็บเงินจริงเด็ดขาด)*
 
-**🔒 SHA256 Hash of `Elias-Extractor-BIP39.html`:**
+**🔒 SHA256 Hash of `Elias-Extractor-BIP39.html` (v3.1.0):**
 ```text
-3ACF616301423B0B37EE766E27CB498E2E0CE41EE716842A73E1A4FBEDEECA8C
+EAC5A3F49ACD230E33FFC1C9672FF938248187A7D5C27AA4B4FEF5CC1C84A0F8
 ```
+**🔑 OpenPGP Signing Key / กุญแจสำหรับตรวจลายเซ็น Release:**
+```text
+Key:         ed25519 — Chollatis Maneewong - Bitcoiner <chon_tit@hotmail.com>
+Fingerprint: EEFC F3F0 928D 0199 BA7E 56EC 2DB5 4085 AB23 3A47
+Valid until: 2028-09-13
+Key file:    chollatis-bitcoiner-pubkey.asc (in this repo & attached to every Release)
+```
+ทุก Release มีไฟล์ลายเซ็น `.asc` แนบคู่เสมอ — วิธีตรวจ / How to verify:
+```bash
+gpg --import chollatis-bitcoiner-pubkey.asc
+gpg --verify Elias-Extractor-BIP39.html.asc Elias-Extractor-BIP39.html
+gpg --fingerprint "Chollatis"   # ต้องตรงกับ fingerprint ด้านบนทุกตัวอักษร
+```
+*อย่าเชื่อ fingerprint จากแหล่งเดียว (รวมถึงหน้านี้) — เทียบจากหลายช่องทางอิสระ: repo นี้, learning.chontit.win, และประกาศของชุมชน / Never trust a single channel for the fingerprint — cross-check it across this repo, learning.chontit.win, and community announcements.*
+
+---
+## 🆕 มีอะไรใหม่ใน v3.1.0 (Security-Hardening Release)
+---
+
+เวอร์ชันนี้เกิดจาก **การ audit ภายนอกอิสระ 2 รอบ** ทุกประเด็นถูกพิสูจน์/วัดขนาดก่อนแก้ (ไม่แก้ตามความรู้สึก) — รายละเอียดเต็มใน Release Notes
+
+| # | การเปลี่ยนแปลง | เหตุผล |
+|---|---|---|
+| 1 | **Fixed-Batch Protocol** — จำนวนทอยถูกล็อกล่วงหน้า (N) ต่อชนิดลูกเต๋า/เป้าหมาย ห้ามหยุดก่อน–ทอยเกินไม่ได้ | ปิดช่องโหว่เชิงทฤษฎี *stopping-time bias*: การ "ทอยจนบิตถึงเป้าแล้วหยุด" ทำให้เงื่อนไขการหยุดพัวพันกับข้อมูลที่จะเป็น seed (พิสูจน์ด้วย exact enumeration: เหรียญแฟร์ target 1 บิต ให้ 0.596/0.404) การล็อก N ก่อนทอยลูกแรกคืนเงื่อนไขการพิสูจน์ uniformity แบบเป๊ะ 100% |
+| 2 | **Hard i.i.d. Gate** — ไฟแดง = บล็อกการสร้าง seed จริง (ต้องทิ้ง batch), ไฟเหลือง = ต้องติ๊กยืนยัน | เดิม monitor เป็นเพียงคำเตือน ผู้ใช้สร้าง seed ต่อได้แม้ไฟแดง (control flaw) |
+| 3 | **ตัดปุ่มคัดลอก Clipboard ออกทั้งหมด** — บังคับจดด้วยมือ | ลดจำนวนสำเนา secret ใน memory/clipboard/DOM |
+| 4 | **ซ่อนค่าบิตจนกว่า batch จะครบ** | ตัดช่องทาง selection bias (เลือกหยุด/เริ่มใหม่ตามค่าที่เห็น) |
+| 5 | **External Audit Vector ฝังใน self-test** | ค่าคาดหวังตายตัว ตรวจข้ามกับ implementation อิสระคนละภาษาได้ (Don't Trust, Verify ของจริง) |
+| 6 | แก้ test distribution ให้รวม = 1.00 พอดี · ปรับ wording สถิติเป็น "No anomaly detected" | ความสะอาดของ test suite + ไม่กล่าวอ้างเกินหลักฐาน (finite test พิสูจน์ i.i.d. ไม่ได้) |
+
+**ตารางแผนการทอยที่ล็อกไว้ (Pre-committed N):**
+
+| แหล่ง | 256 บิต (24 คำ) | 128 บิต (12 คำ) |
+|---|---|---|
+| HEX Dice (d16) | **96 ครั้ง** (= 32 โยน × 3 ลูก) | **51 ครั้ง** (= 17 โยน × 3 ลูก) |
+| D6 | **132 ครั้ง** | **68 ครั้ง** |
+| Coin | **336 ครั้ง** | **172 ครั้ง** |
+
+*ค่า N ทุกตัวผ่าน simulation หลายพันรอบ: โอกาสที่บิตไม่ถึงเป้า ≈ 0 แม้ลูกเต๋าเบี้ยว ~10% — ถ้า batch ใดสกัดบิตไม่ถึงเป้า (ลูกเต๋าเบี้ยวหนักมาก) กติกาคือ**ทิ้งทั้งชุดแล้วเริ่มใหม่** ห้ามต่อเติม*
 
 ---
 ## 🇹🇭 ส่วนภาษาไทย (Thai Version)
 ---
 
-เครื่องมือแปลงเอนโทรปีทางกายภาพ (Physical Entropy) เช่น การทอยลูกเต๋า หรือการโยนเหรียญ ให้กลายเป็นรหัส **Seed Phrase (BIP-39)** ระดับ Cryptographic-Grade โปรเจกต์นี้ยึดหลักการ **"Don't Trust, Verify"** อย่างเคร่งครัด โดยใช้คณิตศาสตร์เชิงการจัด (Combinatorics) สกัดเฉพาะความสุ่มที่บริสุทธิ์ (100% Uniform) และกำจัดความเอนเอียง (Bias) ออกอย่างสมบูรณ์แบบโดยไม่ต้องพึ่งพาฟังก์ชัน Hash ในกระบวนการสร้างเอนโทรปี
+เครื่องมือแปลงเอนโทรปีทางกายภาพ (Physical Entropy) เช่น การทอยลูกเต๋า หรือการโยนเหรียญ ให้กลายเป็นรหัส **Seed Phrase (BIP-39)** ระดับ Cryptographic-Grade โปรเจกต์นี้ยึดหลักการ **"Don't Trust, Verify"** อย่างเคร่งครัด โดยใช้คณิตศาสตร์เชิงการจัด (Combinatorics) สกัดเฉพาะความสุ่มที่บริสุทธิ์ และกำจัดความเอนเอียง (Bias) ของลูกเต๋าออกอย่างสมบูรณ์โดยไม่พึ่งพาฟังก์ชัน Hash ในเส้นทางสร้างเอนโทรปี — ตั้งแต่ v3.1.0 การรับประกัน uniformity แบบเป๊ะมีผลภายใต้เงื่อนไขครบถ้วน: **การทอยเป็นอิสระต่อกัน (i.i.d.) + ทอยครบตามแผน N ที่ล็อกล่วงหน้า**
 
 ### 🧠 อัลกอริทึมที่ใช้งานจริงทั้งหมด (Algorithms Under the Hood)
 
 1.  **Elias Extractor (Combinatorial Number System):**
-    *   เปลี่ยนลำดับการทอยเต๋าที่มีอคติให้เป็น "อันดับการเรียงลำดับ" (Rank) 
-    *   ภายใต้สมมติฐานที่ว่าการทอยแต่ละครั้งเป็นอิสระต่อกัน (i.i.d.) อัลกอริทึมจะใช้คณิตศาสตร์ BigInt คำนวณสัมประสิทธิ์พหุนาม (Multinomial Coefficient) เพื่อสกัดบิตที่ปราศจากอคติ
-2.  **System Entropy Salt (Defense-in-Depth):**
-    *   **ฟังก์ชันทางเลือก (Opt-in):** รองรับการผสมความสุ่มจากเครื่อง (XOR) เข้ากับความสุ่มจากลูกเต๋า ป้องกันกรณีที่ผู้โจมตีแอบจดบันทึกลำดับการทอยเต๋าของคุณ
-    *   ใช้ `crypto.getRandomValues()` (OS CSPRNG) เป็นแหล่งหลัก ทำการ XOR ร่วมกับ Entropy Pool ที่รวบรวมจาก Hardware Interrupts (การขยับเมาส์, การแตะหน้าจอ, จังหวะการกดคีย์บอร์ด, และระยะเวลา `performance.now()`)
-3.  **SHA-256 (Pure JavaScript Implementation):**
-    *   ใช้สำหรับคำนวณ **BIP-39 Checksum เท่านั้น** ไม่ได้ใช้สร้างเอนโทรปี
-    *   เขียนขึ้นมาประมวลผลเองในระดับ Bitwise โดยไม่พึ่งพา Web Crypto API (`crypto.subtle`) เพื่อให้โค้ดทำงานได้แม้ในเบราว์เซอร์รุ่นเก่าหรือ Tor Browser ที่ตั้งค่า Security Level ขั้นสูงสุด
-4.  **Strict BIP-39 Standard:**
-    *   ฝัง Wordlist มาตรฐาน 2048 คำ พร้อมระบบตรวจสอบความสมบูรณ์แบบรัดกุมหลายชั้น (ตรวจการเรียง A-Z, ห้ามมีคำซ้ำ, และตรวจสอบ SHA-256 Hash ของชุดคำทั้งก้อน)
-5.  **ไม่มีการเชื่อมต่อภายนอก:** เป็นไฟล์ HTML ไฟล์เดียวจบ ไม่มีการดึงไฟล์ CSS, JS, Font หรือไลบรารีจากภายนอก
+    *   เปลี่ยนลำดับการทอยเต๋าที่มีอคติให้เป็น "อันดับการเรียงลำดับ" (Rank) ภายใน type class
+    *   ภายใต้ i.i.d. อัลกอริทึมใช้ BigInt คำนวณสัมประสิทธิ์พหุนาม (Multinomial Coefficient) เพื่อสกัดบิตที่ปราศจากอคติ — bias ของลูกเต๋าถูกจ่ายเป็น "จำนวนทอยที่มากขึ้น" ไม่ใช่คุณภาพบิตที่ลดลง
+2.  **Fixed-Batch Protocol (ใหม่ใน v3.1.0):**
+    *   จำนวนทอย N ถูกกำหนด**ก่อน**ลูกเต๋าลูกแรกตกพื้น — การตัดสินใจหยุดจึงเป็นค่าคงที่ ไม่พัวพันกับข้อมูลสุ่ม ทำให้ทฤษฎีบทของ Elias คุ้มครองแบบไม่มีดอกจัน
+3.  **System Entropy Salt (Defense-in-Depth, Opt-in):**
+    *   ผสมความสุ่มจากเครื่อง (XOR) เข้ากับลูกเต๋า — กัน**การทำซ้ำ seed จาก log การทอย/keylogger** เท่านั้น (ไม่กันกล้อง/ผู้เห็นหน้าจอ ซึ่ง seed แสดงบนจออยู่แล้ว)
+    *   เชิงคณิตศาสตร์: XOR ต้องการเพียง "แหล่งใดแหล่งหนึ่ง" ที่ uniform และอิสระ — ผลลัพธ์แข็งอย่างน้อยเท่าแหล่งที่ดีที่สุดเสมอ
+4.  **SHA-256 (Pure JavaScript):** ใช้เฉพาะ **BIP-39 Checksum** ไม่แตะเส้นทางสร้างเอนโทรปี — ทำงานได้แม้บน Tor Browser ระดับ Safest (ไม่พึ่ง `crypto.subtle`)
+5.  **Strict BIP-39 Standard:** Wordlist 2048 คำ + ตรวจ 5 ชั้น (จำนวน/ไม่ซ้ำ/เรียง A→Z/รูปแบบอักษร/SHA-256 ทั้งก้อน)
+6.  **ไม่มีการเชื่อมต่อภายนอก:** ไฟล์เดียวจบ ไม่มี fetch/CDN/font/library ภายนอก และไม่ใช้ storage ใดๆ
 
-### 🛡️ จุดเด่นและระดับความปลอดภัยขั้นสูงสุด (Paranoia-Level Security)
+### 🛡️ จุดเด่นด้านความปลอดภัย (Paranoia-Level Security)
 
-*   **100% Air-Gapped & Single File:** ปลอดภัยสูงสุดเมื่อใช้งานในสภาพแวดล้อมที่ไม่มีอินเทอร์เน็ต
-*   **Zero Storage Footprint:** ไม่ใช้ `localStorage`, `sessionStorage`, หรือ `cookie` ข้อมูลทั้งหมดเก็บอยู่ใน RAM และเมื่อปิดเครื่องหรือแท็บ ข้อมูลจะหายไปทันที
-*   **Privacy Mode (กันแอบมอง):** ฟีเจอร์เบลอข้อมูลลับ (Seed, Hex, Binary) โดยอัตโนมัติ ข้อมูลจะแสดงเมื่อนำเมาส์ไปชี้หรือแตะค้างไว้เท่านั้น ป้องกันการถูกบันทึกภาพจากกล้องวงจรปิดหรือคนมองข้ามไหล่
-*   **i.i.d. Health Monitor:** ระบบเฝ้าระวังพฤติกรรมการทอยเต๋าแบบเรียลไทม์ ตรวจจับการเกิดรูปแบบซ้ำ (Serial Dependence) ด้วยสถิติ Lag-1 Autocorrelation, Max Repeat Run, Adaptive Proportion Test และ Wald-Wolfowitz Runs Test
-*   **Built-in Self-Test (KAT):** เมื่อเปิดไฟล์ ระบบจะรันทดสอบตัวเองอัตโนมัติเพื่อยืนยันความถูกต้องของอัลกอริทึม Elias, SHA-256, และ BIP-39 Test Vectors หากมีข้อผิดพลาดระบบจะล็อกการทำงานทันที
+*   **100% Air-Gapped & Single File** — ออกแบบสำหรับ Tails OS แบบตัดเน็ตถาวร
+*   **Hard i.i.d. Gate (v3.1.0)** — RCT · Adaptive Proportion · Lag-1 Autocorrelation · Runs Test: ไฟแดง = **ระบบปฏิเสธการสร้าง seed** จนกว่าจะทิ้ง batch และทอยชุดใหม่
+*   **Zero Clipboard (v3.1.0)** — ไม่มีปุ่มคัดลอก: อ่านทีละคำ จดลงกระดาษ/แผ่นโลหะ อ่านทวนกลับ
+*   **Bit Concealment (v3.1.0)** — ค่าบิตถูกซ่อนจนกว่าจะทอยครบแผน ตัด selection bias
+*   **Zero Storage Footprint** — ทุกอย่างอยู่ใน RAM · ปุ่ม WIPE เขียนทับ buffer + รีสตาร์ต Tails เพื่อล้าง RAM จริง
+*   **Privacy Mode** — เบลอข้อมูลลับ กันมองข้ามไหล่/กล้อง (เป็น shoulder-surfing reduction ไม่ใช่ memory protection)
+*   **Built-in Self-Test (KAT)** — Elias round-trip + uniformity, SHA-256 KAT, BIP-39 official vectors, i.i.d. monitor, และ **External Audit Vector**
+
+### 🔍 External Audit Vector — ตรวจข้าม Implementation ด้วยตัวเอง
+
+ป้อนลำดับนี้ให้ implementation อิสระใดๆ (Python/Rust/C — ห้ามแชร์โค้ดกับไฟล์นี้) แล้วผลต้องตรงทุกบิต:
+
+```text
+Input (d16, k=96):  "0123456789ABCDEF" ซ้ำ 6 รอบ
+Extracted length:    346 bits
+First 256 bits hex:  0006542aa4520bad7ce59b3e19ea1f9ca9c7aa8b7c55ba9d4b19861ef035913d
+BIP-39 (24 words):   abandon crawl apple emerge camera stove vicious recall dignity soon
+                     margin deer organ stem combine melt ritual tumble shoe around
+                     upper bracket eager put
+```
+*(หมายเหตุ: ลำดับนี้เป็น pattern สมบูรณ์แบบโดยเจตนาเพื่อให้คำนวณซ้ำง่าย — หากป้อนผ่าน UI จริง Hard Gate จะบล็อกทันทีเพราะตรวจพบ autocorrelation ซึ่งเป็นการยืนยันว่า gate ทำงาน · ใช้ตรวจผ่าน self-test ในตัว หรือเรียกฟังก์ชันตรงในคอนโซล)*
 
 ### 📖 คู่มือการใช้งาน (Operational Security)
 
-**คำเตือน: ห้ามใช้ไฟล์ที่เปิดบนอินเทอร์เน็ตในการสร้าง Seed Phrase สำหรับเก็บเงินจริงเด็ดขาด**
+**คำเตือน: ห้ามใช้ไฟล์ที่เปิดบนอินเทอร์เน็ตสร้าง Seed สำหรับเงินจริงเด็ดขาด**
 
-1.  **ดาวน์โหลด:** โหลดไฟล์ `Elias-Extractor-BIP39.html` ลงใน USB Drive 
-2.  **เตรียมสภาพแวดล้อม (Air-gapped):** บูตคอมพิวเตอร์ด้วย **Tails OS** แบบออฟไลน์ (ปิดสวิตช์ Wi-Fi/ถอดสาย LAN ออกทั้งหมด)
-3.  **เปิดโปรแกรม:** เปิดไฟล์บน Tor Browser ของ Tails (แนะนำตั้ง Security Level: Safest)
-4.  **ทอยและป้อนข้อมูล:** เลือกประเภทอุปกรณ์ (แนะนำ HEX Dice) ทอยลูกเต๋าแล้วป้อนข้อมูลทีละตัวจนกว่าความคืบหน้าจะครบ 100% (256 bits = 24 words)
-5.  **จดบันทึก:** จด Seed Phrase ทั้ง 12 หรือ 24 คำลงบนกระดาษ หรือตอกลงบนแผ่นเหล็ก (หลีกเลี่ยงการใช้ปุ่มคัดลอกลง Clipboard หากไม่จำเป็น)
-6.  **ทำลายหลักฐาน:** ปิดเบราว์เซอร์ และทำการ Shutdown เครื่อง Tails OS (ระบบจะล้างข้อมูลใน RAM ทิ้งทั้งหมด ไม่เหลือร่องรอย)
+1.  **ดาวน์โหลด + ตรวจ:** โหลดจากหน้า Releases → ตรวจ SHA-256 ให้ตรงด้านบน → ตรวจลายเซ็น OpenPGP (`gpg --verify`)
+2.  **เตรียมสภาพแวดล้อม:** บูต **Tails OS** แบบ air-gapped (ตรวจลายเซ็น Tails image ก่อน flash เสมอ)
+3.  **เปิดโปรแกรม:** เปิดไฟล์บน Tor Browser (Security Level: Safest ได้)
+4.  **ล็อกแผนก่อนทอย:** เลือกชนิดลูกเต๋า + ขนาด seed → ระบบแสดง **N ที่ล็อกไว้** → ทอยจริงให้ครบ N พอดี (ลูกเต๋าหลายลูกให้กำหนดกติกาอ่านลำดับตายตัว เช่น สีแดง→ขาว→ดำ ทุกโยน)
+5.  **ผ่าน Gate:** ไฟแดง = ทิ้ง batch ทอยใหม่ · บิตไม่ถึงเป้าใน N = ทิ้ง batch (ห้ามต่อเติม)
+6.  **จดด้วยมือ:** อ่านทีละคำ เขียนลงกระดาษ/โลหะ อ่านทวนกลับทุกคำ — แล้ว**ตรวจซ้ำบนอุปกรณ์อิสระ** (นำ entropy hex ไปเทียบ 24 คำบนเครื่องมือคนละตัว แบบ offline) ก่อนใช้จริง
+7.  **ทำลายร่องรอย:** ปิดเบราว์เซอร์ + Shutdown Tails (ล้าง RAM)
 
 ### 🔍 การตรวจสอบและข้อสงวนสิทธิ์
 
-ผู้ใช้สามารถตรวจสอบความถูกต้องของ Wordlist มาตรฐาน (ครบ 2048 คำ) และกระบวนการแปลงรหัสได้ด้วยตนเองผ่าน UI ที่แสดงให้เห็นการแมปจาก 11-bit ไปยัง Index อย่างโปร่งใส
+ผู้ใช้ตรวจสอบ Wordlist, การแมป 11-bit → index → word, และ External Audit Vector ได้ด้วยตนเองทั้งหมดผ่าน UI ที่โปร่งใส
 
-**ข้อสงวนสิทธิ์:** ซอฟต์แวร์นี้ให้ใช้งานในลักษณะ "ตามสภาพที่เป็นอยู่" (AS IS) ผู้ใช้งานต้องรับผิดชอบต่อความปลอดภัยของสภาพแวดล้อมคอมพิวเตอร์ (OpSec) และการเก็บรักษา Seed Phrase ด้วยตนเอง
+**ข้อสงวนสิทธิ์:** ซอฟต์แวร์นี้ให้ใช้ "ตามสภาพที่เป็นอยู่" (AS IS) ผู้ใช้รับผิดชอบ OpSec ของสภาพแวดล้อมและการเก็บรักษา Seed ด้วยตนเอง
 
 <br>
 
@@ -65,47 +121,52 @@
 ## 🇬🇧 English Section (English Version)
 ---
 
-A physical entropy extraction tool that converts biased dice rolls or coin flips into a Cryptographic-Grade **BIP-39 Seed Phrase**. Strictly adhering to the **"Don't Trust, Verify"** philosophy, this project uses pure combinatorics to extract 100% uniform randomness, eliminating physical bias completely without relying on any cryptographic hashes in the entropy generation path.
+A physical-entropy extraction tool that converts biased dice rolls or coin flips into a cryptographic-grade **BIP-39 seed phrase**. Strictly "Don't Trust, Verify": pure combinatorics extracts uniform randomness and eliminates physical bias with **no cryptographic hash in the entropy path**. Since v3.1.0 the exact-uniformity guarantee holds under the complete condition set: **i.i.d. rolls + a pre-committed fixed batch of exactly N rolls**.
 
 ### 🧠 Algorithms Under the Hood
 
-1.  **Elias Extractor (Combinatorial Number System):**
-    *   Translates biased physical rolls into a "Rank" within their specific sequence configuration.
-    *   Assuming the rolls are independent and identically distributed (i.i.d.), it uses BigInt combinatorics to calculate multinomial coefficients, perfectly peeling away unbiased bits from the sequence rank.
-2.  **System Entropy Salt (Defense-in-Depth):**
-    *   **Opt-in Feature:** Allows XOR-ing hardware-derived randomness with your dice rolls. This prevents your seed from being perfectly reproducible if an attacker records your physical dice sequence.
-    *   Combines the OS CSPRNG (`crypto.getRandomValues()`) with an entropy pool constantly gathered from hardware interrupts (mouse movements, touch events, keyboard strokes, and `performance.now()` micro-timings).
-3.  **SHA-256 (Pure JavaScript Implementation):**
-    *   Used **exclusively for the BIP-39 Checksum**. It is never used to generate or stretch entropy.
-    *   Implemented entirely in bitwise JS to ensure the file runs perfectly on restrictive browsers or Tor Browser's "Safest" security level without needing the `crypto.subtle` Web API.
-4.  **Strict BIP-39 Standard:**
-    *   Embeds the official 2048 wordlist with multi-layered integrity checks, including strict A-Z sorting, duplication blocks, and a full-blob SHA-256 validation to prevent malicious word substitutions.
-5.  **Zero External Dependencies:** Designed as a single HTML file. It has no network connectivity and does not fetch external CDNs, fonts, or libraries.
+1.  **Elias Extractor (Combinatorial Number System):** maps the roll sequence to its rank within its type class; under i.i.d., BigInt multinomial arithmetic peels off provably unbiased bits. Dice bias costs *more rolls*, never bit quality.
+2.  **Fixed-Batch Protocol (new in v3.1.0):** the roll count N is committed *before the first die lands*, so the stopping decision is a constant — independent of the randomness that becomes the seed. This closes the *stopping-time bias* found in external audit (proven by exact enumeration: a fair coin with target 1 bit under first-crossing stopping yields 0.596/0.404) and restores the exact-uniformity proof with no asterisks. If a batch extracts fewer bits than the target (grossly unfair dice), **discard the whole batch** — never top-up.
+3.  **System Entropy Salt (opt-in, defense-in-depth):** XORs OS CSPRNG randomness into the dice output. Scope: defeats seed reconstruction from a roll log/keylogger only — not cameras/screen observers. Mathematically XOR needs only *one* of the two sources to be uniform and independent; the result is at least as strong as the best source.
+4.  **SHA-256 (pure JS):** BIP-39 checksum only — never touches the entropy path. Runs on Tor Browser "Safest" without `crypto.subtle`.
+5.  **Strict BIP-39:** embedded 2048-word list with 5-layer integrity checks (count / uniqueness / strict A→Z order / charset / full-blob SHA-256).
+6.  **Zero external anything:** one file, no network, no storage.
 
 ### 🛡️ Paranoia-Level Security Features
 
-*   **100% Air-Gapped & Single File:** Everything is bundled into one HTML file. Completely network-isolated.
-*   **Zero Storage Footprint:** Completely avoids `localStorage`, `sessionStorage`, and `cookies`. State exists only in RAM, featuring an in-place overwrite wipe mechanism.
-*   **Privacy Mode (Anti-Shoulder Surfing):** Sensitive data (Seed, Hex, Binary) is heavily blurred by default and only revealed on hover or press-and-hold, protecting against CCTV and nearby observers.
-*   **i.i.d. Health Monitor:** A real-time diagnostic engine that scrutinizes your physical rolls for dangerous patterns or serial dependence, utilizing Lag-1 Autocorrelation, Max Repeat Run, Adaptive Proportion Test, and Wald-Wolfowitz stats.
-*   **Built-in Self-Test (KAT):** On boot, the system autonomously executes Known Answer Tests (KAT) for the Elias algorithm, SHA-256 vectors, and official BIP-39 vectors. Any failure instantly locks the application.
+*   **100% Air-Gapped & Single File**
+*   **Hard i.i.d. Gate (v3.1.0):** RCT, Adaptive Proportion, Lag-1 Autocorrelation, Runs Test — **RED blocks seed generation** (discard the batch); YELLOW requires explicit confirmation; GREEN means *"no anomaly detected"*, never *"i.i.d. proven"*.
+*   **Zero Clipboard (v3.1.0):** the copy button is gone. Hand-copy word by word, then read back.
+*   **Bit Concealment (v3.1.0):** extracted bit values stay hidden until the batch completes, removing any selection channel.
+*   **Zero Storage Footprint** with an in-place overwrite WIPE; restart Tails to truly clear RAM.
+*   **Privacy Mode:** blur-until-hover (shoulder-surfing reduction — not memory protection).
+*   **Built-in Self-Test (KAT):** Elias round-trip + uniformity on heavily-biased input, SHA-256 KATs, official BIP-39 vectors, i.i.d. monitor check, and an **External Audit Vector**.
 
-### 📖 Usage Instructions (OpSec)
+### 🔍 External Audit Vector — verify across implementations
 
-**WARNING: NEVER use the online/hosted version to generate a seed phrase for real funds.**
+Feed this to any independent implementation (different language, no shared code); every bit must match:
 
-1.  **Download:** Save `Elias-Extractor-BIP39.html` to a clean USB Drive from the Releases page.
-2.  **Air-gapped Environment:** Boot a computer using **Tails OS** (or a clean, trusted live Linux distribution). **Disconnect entirely from the internet** (unplug LAN, disable Wi-Fi).
-3.  **Run:** Open the HTML file using the Tor Browser (set Security Level to Safest).
-4.  **Generate:** Select your entropy source (HEX Dice recommended). Roll physically and input the results until the progress bar reaches 100% (256 bits = 24 words).
-5.  **Record:** Write your 12 or 24-word Seed Phrase onto paper or punch it into a metal plate (avoid using the clipboard copy button if possible).
-6.  **Destroy Traces:** Close the browser and completely shut down the Tails OS machine (this triggers an amnesic wipe, clearing all system RAM).
+```text
+Input (d16, k=96):  "0123456789ABCDEF" repeated 6 times
+Extracted length:    346 bits
+First 256 bits hex:  0006542aa4520bad7ce59b3e19ea1f9ca9c7aa8b7c55ba9d4b19861ef035913d
+BIP-39 (24 words):   abandon crawl apple emerge camera stove vicious recall dignity soon
+                     margin deer organ stem combine melt ritual tumble shoe around
+                     upper bracket eager put
+```
+*(Deliberately a perfect pattern for easy recomputation — entering it through the live UI trips the RED hard gate on autocorrelation, which itself confirms the gate works. Verify via the built-in self-test or by calling the functions directly.)*
 
-### 🔍 Verification & Disclaimer
+### 📖 Usage (OpSec)
 
-Users can manually verify the integrity of the strict 2048 standard wordlist and the conversion process. The BIP-39 control panel transparently displays the step-by-step mapping from the 11-bit binary chunks directly to the wordlist index.
+1.  **Download + verify:** from Releases → check SHA-256 above → verify the OpenPGP signature (`gpg --verify`).
+2.  **Air-gapped Tails** (verify the Tails image signature before flashing).
+3.  **Open** the file in Tor Browser.
+4.  **Commit the plan before rolling:** pick dice type + seed size → the tool locks **N** → roll exactly N (with multiple dice, fix a reading order — e.g. red→white→black every throw).
+5.  **Pass the gate:** RED → discard & re-roll a fresh batch. Bits short of target at N → discard (never top-up).
+6.  **Hand-copy** the words, read them back, then **cross-verify on an independent offline device** (entropy hex → 24 words) before funding.
+7.  **Shut down Tails** to wipe RAM.
 
-**Disclaimer:** This software is provided "AS IS". The user is entirely responsible for maintaining the physical security of their computer environment (OpSec) and the safe storage of their Seed Phrase.
+**Disclaimer:** provided "AS IS". You are responsible for your environment's OpSec and for safeguarding your seed.
 
 ---
-*“Don't Trust, Verify.”* — **Chollatis Bitcoiner.**
+*"Don't Trust, Verify."* — **Chollatis Bitcoiner.**
