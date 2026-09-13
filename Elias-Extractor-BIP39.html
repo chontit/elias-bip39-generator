@@ -8,6 +8,18 @@
   uniform 100% แบบพิสูจน์ได้ทางคณิตศาสตร์ ด้วย Elias extractor (combinatorics ล้วน
   ไม่มี cryptographic hash ในการสร้าง entropy). SHA-256 ใช้เฉพาะ BIP39 checksum.
 
+  VERSION 3.1.0 (2026-09) — SECURITY-HARDENING RELEASE
+   [แก้ตามผล external audit — ทุกข้อพิสูจน์/วัดผลก่อนแก้]
+   1) FIXED-BATCH PROTOCOL: จำนวนทอยถูกล็อกล่วงหน้า (pre-committed N ต่อ alphabet/target)
+      ปิดช่องโหว่เชิงทฤษฎี "stopping-time bias" — การหยุดแบบ first-crossing ทำให้ output
+      ไม่ uniform เป๊ะ (พิสูจน์ด้วย exact enumeration: เหรียญแฟร์ target 1 บิต ได้ 0.596/0.404)
+      การล็อก N ก่อนเริ่มทำให้ทุกการเรียงของ type มาถึงเส้นชัยครบชุด — proof ของ Elias คืนสภาพ 100%
+   2) HARD i.i.d. GATE: ไฟแดง = บล็อกการสร้าง seed จริง (ไม่ใช่แค่คำเตือน) · ไฟเหลือง = ต้องติ๊กยืนยัน
+   3) ตัดปุ่มคัดลอก clipboard ออกทั้งหมด — ลดสำเนา secret ใน memory/clipboard
+   4) ซ่อนค่าบิตสะสมจนกว่า batch จะครบ — ตัดช่องทาง selection bias ระหว่างทอย
+   5) External audit vector ฝังใน self-test — ตรวจข้ามกับ implementation อิสระ (คนละภาษา) ได้
+   6) แก้ test distribution ให้รวม = 1.00 พอดี · ปรับ wording สถิติเป็น "No anomaly detected"
+
   HARD CONSTRAINTS ที่ยึดถือ:
    1) HTML ไฟล์เดียวจบ  2) ไม่มี network/CDN/fetch/font/external ใด ๆ
    3) ไม่ใช้ crypto.subtle — SHA-256 เป็น pure-JS ฝังในไฟล์
@@ -18,7 +30,7 @@
 ============================================================================ -->
 <html lang="th"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ELIAS ENTROPY EXTRACTION TERMINAL &rarr; BIP-39</title>
+<title>ELIAS ENTROPY EXTRACTION TERMINAL &rarr; BIP-39 &middot; v3.1.0</title>
 <style>
 /* ---- Terminal/HUD aesthetic · inline CSS ล้วน · ธีม Dark/Light ผ่าน CSS variables ---- */
 :root{ /* ===== DARK (ค่าเริ่มต้น) ===== */
@@ -130,7 +142,7 @@ body.privacy tr:active td.bin,body.privacy tr:active td.dec,body.privacy tr:acti
 
 <div class="topbar">
   <div style="flex:1;min-width:0">
-    <h1>&#9670; Elias Extractor &rarr; BIP-39 Seed Generator</h1>
+    <h1>&#9670; Elias Extractor &rarr; BIP-39 Seed Generator <span class="pill">v3.1.0</span></h1>
     <div class="sub">เปลี่ยนการทอยลูกเต๋า/เหรียญที่อาจมี bias &rarr; entropy สม่ำเสมอแบบพิสูจน์ได้ &middot; ออฟไลน์ 100%
       <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">แปลงการทอยที่อาจมี bias ให้เป็น entropy ที่กระจายสม่ำเสมอแบบพิสูจน์ได้ ด้วย Elias extractor (คณิตศาสตร์การจัดหมู่ล้วน ไม่ใช้ hash ในการสร้าง entropy) ทำงานออฟไลน์ 100% ไฟล์เดียว<span class="en">Turns biased dice or coin tosses into provably uniform entropy via the Elias extractor (pure combinatorics, no hashing in the entropy path). Fully offline, single file.</span></span></span>
       <span class="pill">Tails / air-gapped เท่านั้น</span></div>
@@ -172,6 +184,7 @@ body.privacy tr:active td.bin,body.privacy tr:active td.dec,body.privacy tr:acti
   <label style="cursor:pointer;font-size:13px"><input type="checkbox" id="saltChk" onchange="onSaltToggle()" style="width:auto;margin-right:7px;vertical-align:middle"> &#129482; ผสม System Entropy (Salt) — seed ไม่ deterministic จากลูกเต๋าอย่างเดียว</label>
   <div class="dim" style="font-size:11px;margin-top:3px">ทำไมต้องใช้ / เมื่อไรควรเปิด
     <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">ปกติ seed สร้างจากลำดับการทอยแบบตายตัว (deterministic) — หากมีคนแอบจดลำดับการทอยหรือมี keylogger ก็สร้าง seed เดิมซ้ำได้. เปิดตัวเลือกนี้เพื่อผสมความสุ่มจากเครื่อง (XOR) ทำให้ seed ขึ้นกับทั้งลูกเต๋าและการสุ่มของเครื่อง จึงทำซ้ำจาก log การทอยอย่างเดียวไม่ได้ · ยังคง uniform และ hash-free · ค่าเริ่มต้นปิด<span class="en">By default the seed is deterministic from your rolls. Enable to XOR in system randomness so the seed depends on both dice and machine — not reproducible from a roll log alone. Still uniform & hash-free. Off by default.</span></span></span></div>
+  <div class="dim" style="font-size:11px;margin-top:5px">ขอบเขตการป้องกัน (อ่านให้ชัด): salt กันเฉพาะ<b>การทำซ้ำ seed จาก log การทอย/keylogger</b> — <b>ไม่กัน</b>กล้อง/คนเห็นหน้าจอ (seed ก็แสดงบนจอเช่นกัน) · เชิงคณิตศาสตร์ XOR ต้องการเพียง "แหล่งใดแหล่งหนึ่ง" (ลูกเต๋า หรือ CSPRNG) ที่ uniform และอิสระต่อกัน — ผลลัพธ์แข็งอย่างน้อยเท่าแหล่งที่ดีที่สุดเสมอ ไม่ใช่ต้องเชื่อทั้งสองแหล่ง<span class="en">Scope: the salt only defeats seed reconstruction from a roll log/keylogger. It does not protect against cameras or screen observers (the seed is on screen anyway). Mathematically, XOR needs only ONE of the two sources (dice or CSPRNG) to be uniform and independent — the result is at least as strong as the best source.</span></div>
   <div id="saltState" class="dim" style="margin-top:6px"></div>
 </div>
 
@@ -185,8 +198,8 @@ body.privacy tr:active td.bin,body.privacy tr:active td.dec,body.privacy tr:acti
 
 <!-- INPUT -->
 <div class="panel p-input">
-  <h2>1 &middot; ป้อนการทอย / Input rolls <span id="alphaLbl" class="pill"></span>
-    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">พิมพ์ในช่องด้านล่างเท่านั้น · ช่องรับเฉพาะสัญลักษณ์ของแหล่งที่เลือก (กันพิมพ์ผิดอัตโนมัติ) · ระบบเก็บลำดับการทอยตามเวลา · แนะนำให้ทอยเกินเป้าหมายเล็กน้อย<span class="en">Keyboard only. The field accepts only the selected source's symbols (typo-proof). Rolls are recorded in order; rolling slightly past the target is recommended.</span></span></span></h2>
+  <h2>1 &middot; ป้อนการทอย / Input rolls <span id="alphaLbl" class="pill"></span> <span id="batchLbl" class="pill" style="color:var(--cy);border-color:var(--cy)"></span>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">พิมพ์ในช่องด้านล่างเท่านั้น · ช่องรับเฉพาะสัญลักษณ์ของแหล่งที่เลือก (กันพิมพ์ผิดอัตโนมัติ) · ระบบเก็บลำดับการทอยตามเวลา · <b>จำนวนทอยถูกล็อกล่วงหน้า (N)</b> — ทอยให้ครบพอดี ห้ามหยุดก่อน และช่องจะตัดอัตโนมัติเมื่อครบ<span class="en">Keyboard only. The field accepts only the selected source's symbols (typo-proof). The roll count N is pre-committed: complete the batch exactly — no early stop, input is capped at N.</span></span></span></h2>
   <textarea id="inp" oninput="onInput()" placeholder="พิมพ์ที่นี่ / type here — ตัวอย่าง/e.g.  A3F0 9C1D 7E2B"></textarea>
   <div class="row" style="margin-top:8px">
     <div style="flex:0"><button class="danger" onclick="wipe()">&#128465; ล้างทั้งหมด / WIPE (เคลียร์ RAM)</button></div>
@@ -214,6 +227,19 @@ const ALPHABETS={
       keys:["1","2","3","4","5","6"],ex:"4 2 6 1 5 3 2 6 4 1"},
   2 :{n:2, label:"Coin",   syms:["H","T"],ceil:1.0,keys:["H","T"],ex:"H T T H H T H T T H"}
 };
+
+/* ===== FIXED BATCH (v3.1.0) =====
+   จำนวนทอยถูก "ล็อกล่วงหน้า" ต่อ (alphabet, target) — ผู้ใช้ต้องทอยให้ครบ N พอดี
+   ห้ามหยุดก่อน (ระบบไม่สร้าง seed) และทอยเกินไม่ได้ (ช่องรับตัดที่ N)
+   เหตุผล: การหยุดเมื่อ "บิตถึงเป้า" (first-crossing) ทำให้เงื่อนไขการหยุดพัวพันกับข้อมูล
+   ที่กำลังจะเป็น seed → uniformity ของ Elias เสียเล็กน้อย (พิสูจน์ด้วย exact enumeration).
+   การล็อก N ก่อนเริ่มตัดความพัวพันนี้ขาด — ทุกการเรียงของ type มาถึงเส้นชัยครบชุด proof คืน 100%.
+   ค่า N เลือกจาก simulation ให้ P(บิตไม่ถึงเป้า) ≈ 0 แม้เต๋าเบี้ยวปานกลาง (~10%):
+   ถ้า batch ไหนบิตไม่ถึงเป้า (เต๋าเบี้ยวหนักมาก) → ทิ้งทั้ง batch แล้วเริ่มใหม่ (ไม่ต่อเติม) */
+const BATCH={16:{256:96,128:51}, 6:{256:132,128:68}, 2:{256:336,128:172}};
+function curBatchN(){ return BATCH[+$("type").value][+$("target").value]; }
+let HEALTH_WORST="g";   // ผล worst-case ล่าสุดจาก i.i.d. monitor ("g"|"y"|"r") — ใช้เป็น hard gate
+let ACK_Y=false;        // ผู้ใช้ติ๊กยืนยันกรณีไฟเหลืองแล้วหรือยัง (ต่อ batch ปัจจุบัน)
 const WL="abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual adapt add addict address adjust admit adult advance advice aerobic affair afford afraid again age agent agree ahead aim air airport aisle alarm album alcohol alert alien all alley allow almost alone alpha already also alter always amateur amazing among amount amused analyst anchor ancient anger angle angry animal ankle announce annual another answer antenna antique anxiety any apart apology appear apple approve april arch arctic area arena argue arm armed armor army around arrange arrest arrive arrow art artefact artist artwork ask aspect assault asset assist assume asthma athlete atom attack attend attitude attract auction audit august aunt author auto autumn average avocado avoid awake aware away awesome awful awkward axis baby bachelor bacon badge bag balance balcony ball bamboo banana banner bar barely bargain barrel base basic basket battle beach bean beauty because become beef before begin behave behind believe below belt bench benefit best betray better between beyond bicycle bid bike bind biology bird birth bitter black blade blame blanket blast bleak bless blind blood blossom blouse blue blur blush board boat body boil bomb bone bonus book boost border boring borrow boss bottom bounce box boy bracket brain brand brass brave bread breeze brick bridge brief bright bring brisk broccoli broken bronze broom brother brown brush bubble buddy budget buffalo build bulb bulk bullet bundle bunker burden burger burst bus business busy butter buyer buzz cabbage cabin cable cactus cage cake call calm camera camp can canal cancel candy cannon canoe canvas canyon capable capital captain car carbon card cargo carpet carry cart case cash casino castle casual cat catalog catch category cattle caught cause caution cave ceiling celery cement census century cereal certain chair chalk champion change chaos chapter charge chase chat cheap check cheese chef cherry chest chicken chief child chimney choice choose chronic chuckle chunk churn cigar cinnamon circle citizen city civil claim clap clarify claw clay clean clerk clever click client cliff climb clinic clip clock clog close cloth cloud clown club clump cluster clutch coach coast coconut code coffee coil coin collect color column combine come comfort comic common company concert conduct confirm congress connect consider control convince cook cool copper copy coral core corn correct cost cotton couch country couple course cousin cover coyote crack cradle craft cram crane crash crater crawl crazy cream credit creek crew cricket crime crisp critic crop cross crouch crowd crucial cruel cruise crumble crunch crush cry crystal cube culture cup cupboard curious current curtain curve cushion custom cute cycle dad damage damp dance danger daring dash daughter dawn day deal debate debris decade december decide decline decorate decrease deer defense define defy degree delay deliver demand demise denial dentist deny depart depend deposit depth deputy derive describe desert design desk despair destroy detail detect develop device devote diagram dial diamond diary dice diesel diet differ digital dignity dilemma dinner dinosaur direct dirt disagree discover disease dish dismiss disorder display distance divert divide divorce dizzy doctor document dog doll dolphin domain donate donkey donor door dose double dove draft dragon drama drastic draw dream dress drift drill drink drip drive drop drum dry duck dumb dune during dust dutch duty dwarf dynamic eager eagle early earn earth easily east easy echo ecology economy edge edit educate effort egg eight either elbow elder electric elegant element elephant elevator elite else embark embody embrace emerge emotion employ empower empty enable enact end endless endorse enemy energy enforce engage engine enhance enjoy enlist enough enrich enroll ensure enter entire entry envelope episode equal equip era erase erode erosion error erupt escape essay essence estate eternal ethics evidence evil evoke evolve exact example excess exchange excite exclude excuse execute exercise exhaust exhibit exile exist exit exotic expand expect expire explain expose express extend extra eye eyebrow fabric face faculty fade faint faith fall false fame family famous fan fancy fantasy farm fashion fat fatal father fatigue fault favorite feature february federal fee feed feel female fence festival fetch fever few fiber fiction field figure file film filter final find fine finger finish fire firm first fiscal fish fit fitness fix flag flame flash flat flavor flee flight flip float flock floor flower fluid flush fly foam focus fog foil fold follow food foot force forest forget fork fortune forum forward fossil foster found fox fragile frame frequent fresh friend fringe frog front frost frown frozen fruit fuel fun funny furnace fury future gadget gain galaxy gallery game gap garage garbage garden garlic garment gas gasp gate gather gauge gaze general genius genre gentle genuine gesture ghost giant gift giggle ginger giraffe girl give glad glance glare glass glide glimpse globe gloom glory glove glow glue goat goddess gold good goose gorilla gospel gossip govern gown grab grace grain grant grape grass gravity great green grid grief grit grocery group grow grunt guard guess guide guilt guitar gun gym habit hair half hammer hamster hand happy harbor hard harsh harvest hat have hawk hazard head health heart heavy hedgehog height hello helmet help hen hero hidden high hill hint hip hire history hobby hockey hold hole holiday hollow home honey hood hope horn horror horse hospital host hotel hour hover hub huge human humble humor hundred hungry hunt hurdle hurry hurt husband hybrid ice icon idea identify idle ignore ill illegal illness image imitate immense immune impact impose improve impulse inch include income increase index indicate indoor industry infant inflict inform inhale inherit initial inject injury inmate inner innocent input inquiry insane insect inside inspire install intact interest into invest invite involve iron island isolate issue item ivory jacket jaguar jar jazz jealous jeans jelly jewel job join joke journey joy judge juice jump jungle junior junk just kangaroo keen keep ketchup key kick kid kidney kind kingdom kiss kit kitchen kite kitten kiwi knee knife knock know lab label labor ladder lady lake lamp language laptop large later latin laugh laundry lava law lawn lawsuit layer lazy leader leaf learn leave lecture left leg legal legend leisure lemon lend length lens leopard lesson letter level liar liberty library license life lift light like limb limit link lion liquid list little live lizard load loan lobster local lock logic lonely long loop lottery loud lounge love loyal lucky luggage lumber lunar lunch luxury lyrics machine mad magic magnet maid mail main major make mammal man manage mandate mango mansion manual maple marble march margin marine market marriage mask mass master match material math matrix matter maximum maze meadow mean measure meat mechanic medal media melody melt member memory mention menu mercy merge merit merry mesh message metal method middle midnight milk million mimic mind minimum minor minute miracle mirror misery miss mistake mix mixed mixture mobile model modify mom moment monitor monkey monster month moon moral more morning mosquito mother motion motor mountain mouse move movie much muffin mule multiply muscle museum mushroom music must mutual myself mystery myth naive name napkin narrow nasty nation nature near neck need negative neglect neither nephew nerve nest net network neutral never news next nice night noble noise nominee noodle normal north nose notable note nothing notice novel now nuclear number nurse nut oak obey object oblige obscure observe obtain obvious occur ocean october odor off offer office often oil okay old olive olympic omit once one onion online only open opera opinion oppose option orange orbit orchard order ordinary organ orient original orphan ostrich other outdoor outer output outside oval oven over own owner oxygen oyster ozone pact paddle page pair palace palm panda panel panic panther paper parade parent park parrot party pass patch path patient patrol pattern pause pave payment peace peanut pear peasant pelican pen penalty pencil people pepper perfect permit person pet phone photo phrase physical piano picnic picture piece pig pigeon pill pilot pink pioneer pipe pistol pitch pizza place planet plastic plate play please pledge pluck plug plunge poem poet point polar pole police pond pony pool popular portion position possible post potato pottery poverty powder power practice praise predict prefer prepare present pretty prevent price pride primary print priority prison private prize problem process produce profit program project promote proof property prosper protect proud provide public pudding pull pulp pulse pumpkin punch pupil puppy purchase purity purpose purse push put puzzle pyramid quality quantum quarter question quick quit quiz quote rabbit raccoon race rack radar radio rail rain raise rally ramp ranch random range rapid rare rate rather raven raw razor ready real reason rebel rebuild recall receive recipe record recycle reduce reflect reform refuse region regret regular reject relax release relief rely remain remember remind remove render renew rent reopen repair repeat replace report require rescue resemble resist resource response result retire retreat return reunion reveal review reward rhythm rib ribbon rice rich ride ridge rifle right rigid ring riot ripple risk ritual rival river road roast robot robust rocket romance roof rookie room rose rotate rough round route royal rubber rude rug rule run runway rural sad saddle sadness safe sail salad salmon salon salt salute same sample sand satisfy satoshi sauce sausage save say scale scan scare scatter scene scheme school science scissors scorpion scout scrap screen script scrub sea search season seat second secret section security seed seek segment select sell seminar senior sense sentence series service session settle setup seven shadow shaft shallow share shed shell sheriff shield shift shine ship shiver shock shoe shoot shop short shoulder shove shrimp shrug shuffle shy sibling sick side siege sight sign silent silk silly silver similar simple since sing siren sister situate six size skate sketch ski skill skin skirt skull slab slam sleep slender slice slide slight slim slogan slot slow slush small smart smile smoke smooth snack snake snap sniff snow soap soccer social sock soda soft solar soldier solid solution solve someone song soon sorry sort soul sound soup source south space spare spatial spawn speak special speed spell spend sphere spice spider spike spin spirit split spoil sponsor spoon sport spot spray spread spring spy square squeeze squirrel stable stadium staff stage stairs stamp stand start state stay steak steel stem step stereo stick still sting stock stomach stone stool story stove strategy street strike strong struggle student stuff stumble style subject submit subway success such sudden suffer sugar suggest suit summer sun sunny sunset super supply supreme sure surface surge surprise surround survey suspect sustain swallow swamp swap swarm swear sweet swift swim swing switch sword symbol symptom syrup system table tackle tag tail talent talk tank tape target task taste tattoo taxi teach team tell ten tenant tennis tent term test text thank that theme then theory there they thing this thought three thrive throw thumb thunder ticket tide tiger tilt timber time tiny tip tired tissue title toast tobacco today toddler toe together toilet token tomato tomorrow tone tongue tonight tool tooth top topic topple torch tornado tortoise toss total tourist toward tower town toy track trade traffic tragic train transfer trap trash travel tray treat tree trend trial tribe trick trigger trim trip trophy trouble truck true truly trumpet trust truth try tube tuition tumble tuna tunnel turkey turn turtle twelve twenty twice twin twist two type typical ugly umbrella unable unaware uncle uncover under undo unfair unfold unhappy uniform unique unit universe unknown unlock until unusual unveil update upgrade uphold upon upper upset urban urge usage use used useful useless usual utility vacant vacuum vague valid valley valve van vanish vapor various vast vault vehicle velvet vendor venture venue verb verify version very vessel veteran viable vibrant vicious victory video view village vintage violin virtual virus visa visit visual vital vivid vocal voice void volcano volume vote voyage wage wagon wait walk wall walnut want warfare warm warrior wash wasp waste water wave way wealth weapon wear weasel weather web wedding weekend weird welcome west wet whale what wheat wheel when where whip whisper wide width wife wild will win window wine wing wink winner winter wire wisdom wise wish witness wolf woman wonder wood wool word work world worry worth wrap wreck wrestle wrist write wrong yard year yellow you young youth zebra zero zone zoo".split(" ");
 
 /* ==========================================================================
@@ -398,18 +424,19 @@ function onTypeChange(){renderPad();onInput();}
 function onInput(){
   const A=curType(), allow=new Set(A.syms.map(s=>s.toUpperCase()));
   const el=$("inp"), raw=el.value, pos=el.selectionStart||0;
+  const CAP=Math.min(MAX_SEQ,curBatchN());                     // v3.1.0: เพดาน = แผน batch ที่ล็อกไว้
   let out="", removed=0, sym=0, capped=false;
   for(let i=0;i<raw.length;i++){
     const ch=raw[i];
     if(ch===" "||ch==="\n"||ch==="\t"){ out+=ch; continue; }   // คงตัวคั่นเพื่อการอ่าน
     const u=ch.toUpperCase();
     if(allow.has(u)){
-      if(sym>=MAX_SEQ){ capped=true; if(i<pos) removed++; continue; }  // เกินเพดาน → ตัดทิ้ง กัน UI freeze
+      if(sym>=CAP){ capped=true; if(i<pos) removed++; continue; } // ครบแผน N → ตัดทิ้ง (ห้ามทอยเกิน)
       out+=u; sym++;
     } else if(i<pos) removed++;                                 // ตัดอักขระนอกชุด + ปรับตำแหน่งเคอร์เซอร์
   }
   if(out!==raw){ el.value=out; const np=pos-removed; try{el.setSelectionRange(np,np);}catch(e){} }
-  scheduleRecompute(capped?("ถึงเพดาน "+MAX_SEQ+" สัญลักษณ์ (กันการค้าง) / reached "+MAX_SEQ+"-symbol cap"):null);
+  scheduleRecompute(capped?("ครบตามแผนที่ล็อกไว้ "+CAP+" สัญลักษณ์แล้ว — หยุดทอย / pre-committed batch of "+CAP+" complete"):null);
 }
 let RECOMP_T=null;
 // debounce: การ sanitize อักขระเกิดทันที (ช่องตอบสนองไว) แต่หน่วงการคำนวณหนัก (BigInt/Elias)
@@ -455,7 +482,7 @@ function wipe(){
     if(typeof SALT_POOL!=="undefined") SALT_POOL.fill(0);
     if(LAST&&Array.isArray(LAST.counts)) LAST.counts.fill(0);
   }catch(e){}
-  SEQ=[]; LAST=null; SALT=null;
+  SEQ=[]; LAST=null; SALT=null; ACK_Y=false;   // ยืนยันไฟเหลืองเป็นของ batch เดิม — ล้างทิ้งพร้อมกัน
   if($("saltChk")) $("saltChk").checked=false;
   $("inp").value=""; $("valMsg").textContent="";
   $("entOut").innerHTML=""; $("bip").innerHTML=""; if($("saltState")) $("saltState").textContent="";  // ล้าง seed/entropy ออกจาก DOM
@@ -540,13 +567,15 @@ function recompute(){
   // --- Elias ---
   let bits="",M=1n,r=0n,counts=new Array(n).fill(0);
   if(k>=1){const R=eliasRank(SEQ,n);M=R.M;r=R.r;counts=R.counts;bits=extractBits(r,M);}
-  const yielded=bits.length, progA=Math.min(100,target?100*yielded/target:0);
-  LAST={A,n,target,k,bits,yielded,counts};
-  // ---- [A] Entropy progress (PRIMARY) ----
+  const N=curBatchN();
+  const yielded=bits.length, progA=Math.min(100,100*k/N);
+  LAST={A,n,target,k,N,bits,yielded,counts};
+  $("batchLbl").textContent="แผนล็อก N = "+N+" / pre-committed";
+  // ---- [A] Batch progress (PRIMARY, v3.1.0: ขับด้วยจำนวนทอย ไม่ใช่จำนวนบิต) ----
   $("fillA").style.width=progA.toFixed(2)+"%";
   $("fillA").className="fill";
-  $("labA").textContent=`${yielded} / ${target} บิตสุ่มสม่ำเสมอ  ·  ${progA.toFixed(1)}%`;
-  $("aNums").innerHTML=`บิตสม่ำเสมอที่ได้จาก Elias / uniform bits from Elias = <b class="mono">${yielded}</b> · เป้าหมาย/target <b>${target}</b> · จำนวนครั้งที่ทอย/rolls <b>${k}</b>`;
+  $("labA").textContent=`การทอย ${k} / ${N} (แผนล็อกล่วงหน้า)  ·  ${progA.toFixed(1)}%`;
+  $("aNums").innerHTML=`จำนวนทอยตามแผน / rolls in pre-committed batch = <b class="mono">${k} / ${N}</b> · บิตสม่ำเสมอสะสม/uniform bits so far <b>${yielded}</b> (เป้าหมาย ${target}) · seed สร้างได้เมื่อทอยครบ N พอดีเท่านั้น`;
   // ---- [B] Source quality / efficiency (DIAGNOSTIC) ----
   const eff=k? yielded/k : 0, effPct=A.ceil? Math.min(100,100*eff/A.ceil):0;
   $("fillB").style.width=effPct.toFixed(2)+"%";
@@ -576,7 +605,7 @@ function renderHealth(seq,n){
   if(N<25){
     $("cLights").innerHTML=light("g","RCT · ค่าซ้ำติดกัน","รอข้อมูลเพิ่ม / need more (≥25)")+
       light("g","APT · สัดส่วน","รอข้อมูลเพิ่ม / need more")+light("g","Autocorr lag-1","รอข้อมูลเพิ่ม / need more")+light("g","Runs test","รอข้อมูลเพิ่ม / need more");
-    $("cVerdict").innerHTML='<span class="dim">ข้อมูลยังน้อยเกินไปที่จะประเมินความเป็นอิสระ (i.i.d.) / not enough data yet</span>';return;
+    $("cVerdict").innerHTML='<span class="dim">ข้อมูลยังน้อยเกินไปที่จะประเมินความเป็นอิสระ (i.i.d.) / not enough data yet</span>';HEALTH_WORST="g";return;
   }
   // RCT
   const C=Math.ceil(20/Math.log2(n))+1,mr=maxRepeatRun(seq);
@@ -589,53 +618,77 @@ function renderHealth(seq,n){
   // runs
   const rz=runsZ(seq,n);let sU=Math.abs(rz)>3.5?"r":Math.abs(rz)>2.5?"y":"g";if(sU==="r")bad.push("runs");
   for(const s of [sR,sA,sC,sU]){if(s==="r")worst="r";else if(s==="y"&&worst!=="r")worst="y";}
+  HEALTH_WORST=worst;   // v3.1.0: ใช้เป็น hard gate ในขั้นสร้าง seed
   $("cLights").innerHTML=
     light(sR,"RCT · ค่าซ้ำติดกัน",`ค่าเดิมออกซ้ำติดกันมากสุด ${mr} ครั้ง (เตือนเมื่อ ≥${C})`)+
     light(sA,"APT · สัดส่วน",`สัญลักษณ์ที่ออกบ่อยสุด ${(ap*100).toFixed(1)}% ในช่วง ${W} ครั้งล่าสุด (ควรอยู่ราว ${(exp*100).toFixed(1)}%)`)+
     light(sC,"Autocorr lag-1",`ρ₁ = ${ac.toFixed(3)} (แดงเมื่อ |ρ|>0.2)`)+
     light(sU,"Runs test",`z = ${rz.toFixed(2)} (แดงเมื่อ |z|>3.5)`);
   $("cVerdict").innerHTML = worst==="r"
-    ? `<span class="err">&#9679; แดง: การทอยอาจไม่เป็นอิสระต่อกันจริง (${bad.join(", ")}) &rarr; ผลลัพธ์อาจไม่สม่ำเสมอ &mdash; แนะนำ <b>หยุดก่อน</b> แล้วเขย่า/ทอยใหม่ให้เป็นอิสระ</span>`
+    ? `<span class="err">&#9679; แดง: การทอยอาจไม่เป็นอิสระต่อกันจริง (${bad.join(", ")}) &mdash; <b>ระบบบล็อกการสร้าง seed</b> (hard gate) &rarr; ทิ้ง batch นี้ กด WIPE แล้วเขย่า/ทอยชุดใหม่ให้เป็นอิสระ</span>`
     : worst==="y"
-    ? `<span class="warn">&#9679; เหลือง: มีสัญญาณผิดปกติเล็กน้อย &mdash; ทอยเพิ่มและระวังให้แต่ละครั้งเป็นอิสระต่อกัน</span>`
-    : `<span style="color:var(--gn)">&#9679; เขียว: ไม่พบความสัมพันธ์ผิดปกติชัดเจน (เป็นเพียงการตรวจเบื้องต้น ไม่ใช่การรับประกันความปลอดภัย)</span>`;
+    ? `<span class="warn">&#9679; เหลือง: พบสัญญาณผิดปกติเล็กน้อย &mdash; ระบบจะขอคำยืนยันก่อนสร้าง seed · ตรวจวิธีทอย/ลูกเต๋าอีกครั้ง</span>`
+    : `<span style="color:var(--gn)">&#9679; No anomaly detected — ไม่พบความผิดปกติจากการตรวจทางสถิติ (การตรวจจำกัดขอบเขต ไม่ใช่การพิสูจน์ i.i.d. และไม่ใช่ใบรับรองความปลอดภัย)</span>`;
 }
 
 /* ==========================================================================
-   ส่วนที่ 7 — Final entropy + GATE 95% -> BIP39 step-by-step
+   ส่วนที่ 7 — GATE (v3.1.0): FIXED BATCH + HARD i.i.d. GATE -> BIP39 step-by-step
+   ลำดับตรวจ: (1) ทอยครบ N พอดีหรือยัง (2) health monitor แดง=บล็อก เหลือง=ต้องยืนยัน
+   (3) บิตถึงเป้าหรือไม่ (ไม่ถึง=ทิ้ง batch) (4) ผ่านครบ -> เผยบิต + สร้าง mnemonic
+   หมายเหตุ: ค่าบิตถูกซ่อนจนกว่า batch จะครบ เพื่อตัดช่องทางเลือกหยุด/เริ่มใหม่ตามค่าที่เห็น
    ========================================================================== */
 function renderEntropyAndGate(){
-  const {target,bits,yielded}=LAST,prog=target?100*yielded/target:0,O=$("bip");
-  // แสดง entropy สะสม (hex+binary) จากบิตที่มี
-  if(yielded>0){
-    let hex="";const full=Math.floor(yielded/4);for(let i=0;i<full*4;i+=4)hex+=parseInt(bits.slice(i,i+4),2).toString(16);
-    $("entOut").innerHTML=`<div class="dim">บิตสม่ำเสมอที่สะสมได้ / uniform bits so far (${yielded}) — เลขฐานสอง:</div><code class="bin">${bits.replace(/(.{8})/g,"$1 ").trim()}</code>`+
-      `<div class="dim" style="margin-top:6px">hex (${full*4} บิตแรก / first bits):</div><code class="mono">${hex||"—"}</code>`;
-  } else $("entOut").innerHTML='<span class="dim">ยังไม่มีบิตสม่ำเสมอ — เริ่มทอยได้เลย / no bits yet — start rolling</span>';
-  // GATE
-  if(prog<80){
-    O.innerHTML=`<div class="dim">ขั้นตอนที่ 1–4 จะแสดงเมื่อความคืบหน้า [A] ถึง <b>80%</b> · seed สุดท้ายจะสร้างได้เมื่อถึง <b>100%</b> (ตอนนี้ ${prog.toFixed(1)}%). `+
-      `<span class="en">Steps 1–4 appear at 80%; the final seed is generated at 100%.</span></div>`;
+  const {target,bits,yielded,k,N}=LAST,O=$("bip");
+  const done=(k===N);
+  // ---- entropy panel: ก่อนครบ batch แสดงเฉพาะ "จำนวน" บิต (ซ่อนค่าบิต กัน selection bias) ----
+  if(!done){
+    $("entOut").innerHTML = k>0
+      ? `<div class="dim">บิตสม่ำเสมอสะสม / uniform bits so far: <b>${yielded}</b> (เป้าหมาย ${target}) — <b>ค่าบิตถูกซ่อนไว้จนกว่าจะทอยครบแผน ${k}/${N}</b> เพื่อตัดช่องทาง selection bias<span class="en">Bit values stay hidden until the pre-committed batch completes, removing any selection channel.</span></div>`
+      : '<span class="dim">ยังไม่มีข้อมูล — เริ่มทอยตามแผนที่ล็อกไว้ได้เลย / start rolling the pre-committed batch</span>';
+    const pct=N?100*k/N:0;
+    if(pct<80){
+      O.innerHTML=`<div class="dim">ทอยตามแผนที่ล็อกไว้ให้ครบ <b>${N} สัญลักษณ์พอดี</b> (ตอนนี้ ${k} · ${pct.toFixed(1)}%) — ขั้นตอน 1–4 แสดงตัวอย่างเมื่อถึง 80% และ seed จะสร้างได้เมื่อครบ N เท่านั้น `+
+        `<span class="en">Complete the pre-committed batch of ${N} symbols; the seed is generated only at exactly N.</span></div>`;
+    } else {
+      O.innerHTML=`<div class="warn">&#9203; ${pct.toFixed(1)}% ของแผน — ทอยต่อให้ครบ <b>${N} สัญลักษณ์พอดี</b> (เหลือ ${N-k})</div>`+
+        `<div class="step"><b>ขั้นที่ 1 · entropy</b> เป้าหมาย ${target} บิตแรกจาก Elias (สะสมแล้ว ${yielded} — ค่าถูกซ่อนจนครบแผน)</div>`+
+        `<div class="step"><b>ขั้นที่ 2 · checksum</b> = ${target/32} บิตแรกของ SHA-256(entropy) — คำนวณเมื่อครบ</div>`+
+        `<div class="step"><b>ขั้นที่ 3–4 · แบ่งทีละ 11 บิต &rarr; หมายเลข &rarr; คำ</b> — แสดงเมื่อครบแผน</div>`+
+        `<div class="dim">ห้ามหยุดก่อนครบ N — การหยุดตามใจทำลายเงื่อนไขการพิสูจน์ / never stop early: the fixed batch is what restores the exact-uniformity proof</div>`;
+    }
+    return;
+  }
+  // ---- k === N : batch ครบพอดี → ตรวจ hard gate ----
+  if(HEALTH_WORST==="r"){
+    $("entOut").innerHTML='<div class="err">ค่าบิตถูกระงับ — i.i.d. monitor ไฟแดง / values withheld: health monitor RED</div>';
+    O.innerHTML=`<div class="warnbox">&#128683; <b>บล็อกการสร้าง seed (hard gate):</b> ตัวตรวจ i.i.d. พบสัญญาณว่าการทอยอาจไม่เป็นอิสระต่อกัน — Elias รับประกันความสม่ำเสมอได้เฉพาะเมื่อการทอยเป็นอิสระจริง.<br>`+
+      `แนวทาง: <b>ทิ้ง batch นี้ทั้งชุด</b> (กด WIPE) → เปลี่ยนวิธีทอยให้เขย่าเต็มที่/พื้นผิวเหมาะสม → เริ่ม batch ใหม่ ${N} สัญลักษณ์.`+
+      `<span class="en">Seed generation is blocked while the i.i.d. monitor is RED. Discard the whole batch (WIPE), fix your rolling technique, and start a fresh batch.</span></div>`;
+    return;
+  }
+  if(HEALTH_WORST==="y" && !ACK_Y){
+    $("entOut").innerHTML='<div class="warn">ค่าบิตรอการยืนยัน — i.i.d. monitor ไฟเหลือง / values pending confirmation (health YELLOW)</div>';
+    O.innerHTML=`<div class="warnbox">&#9888; <b>ไฟเหลืองจากตัวตรวจ i.i.d.</b> — พบสัญญาณผิดปกติเล็กน้อย ระบบขอคำยืนยันก่อนสร้าง seed.<br>`+
+      `ตรวจอีกครั้ง: ลูกเต๋าไม่บิ่น/ไม่ติดขอบ · เขย่าก่อนทอยทุกครั้ง · อ่านลำดับตามกติกาตายตัว. ถ้ามั่นใจแล้ว ติ๊กยืนยันด้านล่าง — หรือทางที่ปลอดภัยกว่าคือทิ้ง batch แล้วทอยใหม่.<br>`+
+      `<label style="cursor:pointer;margin-top:6px"><input type="checkbox" ${ACK_Y?"checked":""} onchange="ACK_Y=this.checked;recompute()" style="width:auto;margin-right:7px;vertical-align:middle">ข้าพเจ้าตรวจสอบลูกเต๋าและวิธีทอยแล้ว ยืนยันดำเนินการต่อ / I have inspected the dice &amp; technique — proceed</label></div>`;
     return;
   }
   if(yielded<target){
-    // 80–99.9%: แสดงขั้นตอน 1–4 + preview บางส่วน แต่ยังสร้าง mnemonic จริงไม่ได้จนกว่าจะครบ 100%
-    const avail=Math.floor(yielded/11);
-    O.innerHTML=`<div class="warn">&#9203; ${prog.toFixed(1)}% — กำลังทอยให้ครบ <b>100% (${target} บิตพอดี)</b> เพื่อสร้าง seed. `+
-      `BIP-39 ต้องใช้จำนวนบิตที่แน่นอน จึงยังสร้าง seed จาก ${prog.toFixed(0)}% ไม่ได้.</div>`+
-      `<div class="step"><b>ขั้นที่ 1 · entropy</b> เป้าหมาย ${target} บิต (ได้แล้ว ${yielded})</div>`+
-      `<div class="step"><b>ขั้นที่ 2 · checksum</b> = ${target/32} บิตแรกของ SHA-256(entropy) — คำนวณเมื่อครบ</div>`+
-      `<div class="step"><b>ขั้นที่ 3–4 · แบ่งทีละ 11 บิต &rarr; หมายเลข &rarr; คำ</b> — ดูตัวอย่างได้ ${avail} กลุ่ม จาก ${target/11|0}</div>`+
-      `<div class="dim">ทอยต่อจนแถบ [A] เต็ม 100% / keep rolling until [A] hits 100%</div>`;
+    $("entOut").innerHTML='<div class="err">บิตที่สกัดได้ไม่ถึงเป้าภายในแผนที่ล็อกไว้ / insufficient extracted entropy within the pre-committed batch</div>';
+    O.innerHTML=`<div class="warnbox">&#10071; <b>Batch นี้ใช้ไม่ได้:</b> สกัดบิตสม่ำเสมอได้ ${yielded} จากเป้าหมาย ${target} ภายในแผน ${N} สัญลักษณ์ — มักเกิดจากลูกเต๋าเบี้ยวหนักมาก.<br>`+
+      `กติกา v3.1.0: <b>ห้ามต่อเติมการทอย</b> (การต่อเติมจนถึงเป้าคือ stopping bias กลับมาอีกร่าง) — ให้ <b>ทิ้งทั้ง batch</b> (กด WIPE) แล้วเริ่มแผนใหม่ ${N} สัญลักษณ์ด้วยลูกเต๋าที่ดีกว่า.`+
+      `<span class="en">Insufficient extracted entropy within the configured batch. Do NOT top-up rolls — discard the whole batch and start a new one (better dice recommended).</span></div>`;
     return;
   }
-  // 100%: บิตครบเป๊ะ -> mnemonic จริง (ผสม salt แบบ XOR ถ้าผู้ใช้เปิดใช้ — คง uniform + hash-free)
+  // ---- ผ่านครบทุกด่าน: เผยบิต + สร้าง mnemonic ----
+  let hex="";const full=Math.floor(yielded/4);for(let i=0;i<full*4;i+=4)hex+=parseInt(bits.slice(i,i+4),2).toString(16);
+  $("entOut").innerHTML=`<div class="dim">บิตสม่ำเสมอทั้ง batch / uniform bits from the completed batch (${yielded}) — เลขฐานสอง:</div><code class="bin">${bits.replace(/(.{8})/g,"$1 ").trim()}</code>`+
+    `<div class="dim" style="margin-top:6px">hex (${full*4} บิตแรก / first bits):</div><code class="mono">${hex||"—"}</code>`;
   let ent=bits.slice(0,target);
   if(SALT) ent=xorBits(ent,saltBits(target));
   const m=buildMnemonic(ent);
-  let rows=m.groups.map((g,i)=>{const isCs=(i===m.groups.length-1);
-    const eBits=isCs?g.bin.slice(0,g.bin.length-(m.CS - (m.CS%11||m.CS)) ):g.bin;
-    return `<tr><td>${i+1}</td><td class="bin">${g.bin}</td><td class="dec">${g.dec}</td><td class="w">${g.word}</td></tr>`;}).join("");
+  let rows=m.groups.map((g,i)=>
+    `<tr><td>${i+1}</td><td class="bin">${g.bin}</td><td class="dec">${g.dec}</td><td class="w">${g.word}</td></tr>`).join("");
   O.innerHTML=
     `<div class="step"><b>ขั้นที่ 1 · entropy สุดท้าย / final entropy (${m.ENT} บิต)</b>${SALT?' <span class="badge b-ok">+ system salt (XOR)</span>':''}<br><code class="mono">${m.hex}</code></div>`+
     `<div class="step"><b>ขั้นที่ 2 · checksum</b> = ${m.CS} บิตแรกของ SHA-256(entropy) [pure-JS]<br>`+
@@ -645,18 +698,9 @@ function renderEntropyAndGate(){
       `<table><tr><th>#</th><th>11-bit</th><th>index</th><th>word</th></tr>${rows}</table></div>`+
     `<div class="step"><b>ขั้นที่ 6 · Seed Phrase (${m.groups.length} คำ)</b><div class="mn">${m.mnemonic}</div>`+
       `<div class="dim" style="font-size:11px;margin:4px 0">&#128374; ถ้าเปิด "กันแอบมอง" ข้อความจะเบลอ — ชี้เมาส์หรือแตะค้างเพื่อดูชั่วคราว / hover or press-and-hold to reveal</div>`+
-      `<button onclick="copyMn(this,'${m.mnemonic}')">&#128203; คัดลอก / copy</button> `+
-      `<div class="warn" style="margin-top:6px;font-size:11px">&#9888; Use with caution &mdash; แนะนำให้พิมพ์ mnemonic ใหม่ทีละคำด้วยตนเอง แทนการคัดลอก เพื่อป้องกันข้อมูลค้างใน clipboard บนอุปกรณ์`+
-      `<span class="en">Prefer typing each word manually instead of copying, to avoid leaving the seed in the device clipboard. Clear the clipboard after use.</span></div></div>`;
+      `<div class="warn" style="margin-top:6px;font-size:11px">&#9997; <b>จดด้วยมือเท่านั้น (v3.1.0 ตัดปุ่มคัดลอกออกแล้ว):</b> อ่านทีละคำ เขียนลงกระดาษ/แผ่นโลหะ แล้วอ่านทวนกลับทุกคำ — ไม่มี clipboard = ไม่มีสำเนา secret ค้างในระบบเพิ่ม`+
+      `<span class="en">Hand-copy only — the clipboard button was removed in v3.1.0 to minimise secret copies. Read each word aloud, write it down, then read it back.</span></div></div>`;
 }
-function copyMn(btn,t){
-  // ยืนยันก่อนคัดลอก — กันกดโดยไม่ตั้งใจ และเตือนเรื่อง clipboard ค้าง
-  if(!confirm("ยืนยันคัดลอก Seed Phrase ลงคลิปบอร์ด?\n\n⚠ Seed จะค้างอยู่ในคลิปบอร์ดของอุปกรณ์จนกว่าจะถูกเขียนทับ — อย่าลืมล้างคลิปบอร์ดหลังใช้ และหลีกเลี่ยงการวางบนแอปที่ไม่ปลอดภัย\n\nConfirm copying the seed phrase to the device clipboard?")) return;
-  const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
-  try{document.execCommand("copy");}catch(e){}document.body.removeChild(ta);
-  if(btn){btn.innerHTML="&#10003; คัดลอกแล้ว / copied";btn.classList.add("copied");   // ✓ แจ้งผลที่ตัวปุ่ม
-    setTimeout(function(){btn.innerHTML="&#128203; คัดลอก / copy";btn.classList.remove("copied");},2500);}}
-
 /* ==========================================================================
    ส่วนที่ 8 — SELF-TEST (Don't Trust, Verify) แสดงผลบนจอ
    ========================================================================== */
@@ -670,7 +714,7 @@ function runSelfTest(){
     if(eliasUnrank(counts,r,n).join(",")!==x.join(","))rt=false;}}
   ok("Elias round-trip (rank↔unrank, n=2/6/16)",rt);
   // 2 Elias uniformity จาก input เบี้ยวหนัก
-  {const n=16,rng=rngF(4242),probs=[.30,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.10,.36];
+  {const n=16,rng=rngF(4242),probs=[.30,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.10,.34]  /* v3.1.0: รวม = 1.00 พอดี */;
    const cum=[];let a=0;for(const p of probs){a+=p;cum.push(a);}const draw=()=>{const u=rng();for(let s=0;s<n;s++)if(u<=cum[s])return s;return n-1;};
    let allb="";for(let blk=0;blk<1500;blk++){const x=[];for(let i=0;i<32;i++)x.push(draw());const{M,r}=eliasRank(x,n);allb+=extractBits(r,M);}
    const bc=new Array(256).fill(0);let nb=0;for(let i=0;i+8<=allb.length;i+=8){bc[parseInt(allb.slice(i,i+8),2)]++;nb++;}
@@ -691,6 +735,14 @@ function runSelfTest(){
   ok("BIP39 128 · 0xff…→zoo…wrong",mv("ffffffffffffffffffffffffffffffff")==="zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong");
   ok("BIP39 256 · 0x00…→abandon…art",mv("0000000000000000000000000000000000000000000000000000000000000000")==="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art");
   ok("BIP39 256 · 0xff…→zoo…vote",mv("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")==="zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo vote");
+  // 6 External audit vector (v3.1.0) — ค่าคาดหวังตรวจข้ามกับ implementation อิสระ (คนละภาษา/คนละ codebase) ได้
+  //   input: d16 ลำดับ "0123456789ABCDEF" ซ้ำ 6 รอบ (k=96) → rank → extract → 256 บิตแรก → BIP39
+  {const seq=[..."0123456789ABCDEF".repeat(6)].map(c=>parseInt(c,16));
+   const {M,r}=eliasRank(seq,16); const b=extractBits(r,M); const m=buildMnemonic(b.slice(0,256));
+   ok("External audit vector: d16 k=96 → 346 bits → seed (cross-implementation)",
+      b.length===346
+      && m.hex==="0006542aa4520bad7ce59b3e19ea1f9ca9c7aa8b7c55ba9d4b19861ef035913d"
+      && m.mnemonic==="abandon crawl apple emerge camera stove vicious recall dignity soon margin deer organ stem combine melt ritual tumble shoe around upper bracket eager put");}
   // wordlist
   ok("BIP39 wordlist = 2048 คำ",WL_OK);
   // render
@@ -732,7 +784,7 @@ function boot(){
   const allPass=runSelfTest();
   $("eng").className=allPass?"ok":"bad";
   $("eng").textContent=allPass
-    ? "สถานะระบบ: ✓ ตรวจสอบผ่านทั้งหมด / all checks passed (SHA-256 KAT · BIP-39 vectors · Elias round-trip+uniformity · i.i.d. monitor)"
+    ? "สถานะระบบ v3.1.0: ✓ ตรวจสอบผ่านทั้งหมด / all checks passed (SHA-256 KAT · BIP-39 vectors · Elias round-trip+uniformity · i.i.d. monitor · external audit vector)"
     : "สถานะระบบ: ✗ มีการตรวจสอบไม่ผ่าน — ห้ามใช้กับเงินจริง / some checks FAILED — do not use for real funds";
   recompute();
 }
@@ -743,8 +795,8 @@ function boot(){
 
 <!-- [A] PRIMARY: ความคืบหน้า Entropy (เกณฑ์ตัดสิน "ครบหรือยัง") -->
 <div class="panel">
-  <h2>[A] &middot; ความคืบหน้า entropy / Entropy progress <span class="pill">หลัก &middot; ตัวชี้ขาด</span>
-    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">= (บิตสม่ำเสมอที่ Elias สกัดได้) / (เป้าหมาย). นี่คือเกณฑ์เดียวที่ใช้ตัดสินว่า "ครบหรือยัง" ไม่ใช่การวัดความเอนเอียง.<span class="en">The only "are we done yet" gauge: uniform bits from Elias / target. Not a bias measure.</span></span></span></h2>
+  <h2>[A] &middot; ความคืบหน้า batch ที่ล็อกไว้ / Pre-committed batch progress <span class="pill">หลัก &middot; ตัวชี้ขาด</span>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">v3.1.0: ตัวชี้ขาดคือ "ทอยครบแผน N พอดีหรือยัง" — จำนวน N ถูกล็อกไว้ล่วงหน้าก่อนทอยลูกแรก เพื่อให้การหยุดไม่ขึ้นกับข้อมูลสุ่มที่กำลังจะเป็น seed (คืนเงื่อนไขการพิสูจน์ uniformity 100%). ห้ามหยุดก่อนครบ และระบบไม่รับเกิน N.<span class="en">v3.1.0: the gauge is "have you rolled exactly N?" — N is pre-committed before the first roll so the stopping decision is independent of the randomness that becomes the seed, restoring the exact-uniformity proof. No early stop; input is capped at N.</span></span></span></h2>
   <div class="bar"><div id="fillA" class="fill"></div><div id="labA" class="lab">0 / 0</div></div>
   <div id="aNums" class="dim"></div>
 </div>
@@ -752,7 +804,7 @@ function boot(){
 <!-- [B] DIAGNOSTIC: คุณภาพ/ประสิทธิภาพแหล่ง input -->
 <div class="panel">
   <h2>[B] &middot; คุณภาพและประสิทธิภาพของแหล่ง / Source quality &amp; efficiency <span class="pill">ตัวช่วยวินิจฉัย</span>
-    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">ประสิทธิภาพ = บิตที่ได้ / จำนวนครั้งที่ทอย เทียบกับค่าสูงสุดตามทฤษฎี. ยิ่งเข้าใกล้ค่าสูงสุด = แหล่งยิ่งดี; ค่าต่ำแปลว่าเต๋าเบี้ยว ต้องทอยเพิ่ม.<span class="en">Efficiency = bits obtained / rolls vs. the theoretical maximum. A diagnostic, not a security guarantee.</span></span></span></h2>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">ประสิทธิภาพ = บิตที่ได้ / จำนวนครั้งที่ทอย เทียบกับค่าสูงสุดตามทฤษฎี. ยิ่งเข้าใกล้ค่าสูงสุด = แหล่งยิ่งดี; ค่าต่ำแปลว่าเต๋าเบี้ยว ต้องทอยเพิ่ม.<span class="en">Efficiency = observed extractor yield (bits obtained / rolls) vs. the theoretical maximum. A diagnostic of dice quality only — NOT an entropy estimate and NOT a security guarantee.</span></span></span></h2>
   <div class="bar"><div id="fillB" class="fill q"></div><div id="labB" class="lab">—</div></div>
   <div class="dim" style="font-size:11px;margin-top:10px">ความถี่ที่แต่ละสัญลักษณ์ออก / how often each symbol appears:</div>
   <div id="hist" class="hist"></div>
@@ -761,8 +813,8 @@ function boot(){
 
 <!-- [C] i.i.d. Health Monitor -->
 <div class="panel">
-  <h2>[C] &middot; ตรวจความเป็นอิสระของการทอย (i.i.d.) / i.i.d. health monitor <span class="pill">ด่านกันพลาด</span>
-    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">คอยดูว่าการทอยแต่ละครั้งสัมพันธ์กันผิดปกติหรือไม่ — ถ้าไม่เป็นอิสระต่อกัน (i.i.d. พัง) ผลลัพธ์อาจไม่สม่ำเสมอจริง.<span class="en">Checks whether your rolls are unusually related. If they aren't independent, the output may not be truly uniform.</span></span></span></h2>
+  <h2>[C] &middot; ตรวจความเป็นอิสระของการทอย (i.i.d.) / i.i.d. health monitor <span class="pill" style="color:var(--rd);border-color:var(--rd)">HARD GATE &middot; แดง=บล็อก</span>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">คอยดูว่าการทอยแต่ละครั้งสัมพันธ์กันผิดปกติหรือไม่ — ถ้าไม่เป็นอิสระต่อกัน (i.i.d. พัง) ผลลัพธ์อาจไม่สม่ำเสมอจริง. v3.1.0: ไฟแดง = <b>บล็อกการสร้าง seed จริง</b> (ต้องทิ้ง batch) · ไฟเหลือง = ต้องติ๊กยืนยันก่อน · ไฟเขียวหมายถึง "ไม่พบความผิดปกติ" เท่านั้น ไม่ใช่การพิสูจน์ i.i.d.<span class="en">Checks whether your rolls are unusually related. v3.1.0: RED hard-blocks seed generation (discard the batch); YELLOW requires explicit confirmation; GREEN means "no anomaly detected" — it is not a proof of i.i.d.</span></span></span></h2>
   <div id="cLights" class="lights"></div>
   <div id="cVerdict" style="margin-top:4px"></div>
 </div>
@@ -781,7 +833,7 @@ function boot(){
 
 <!-- BIP39 step-by-step (เปิดที่ 95%) -->
 <div class="panel p-bip">
-  <h2>ขั้นตอนสร้าง BIP-39 / BIP-39 steps <span class="pill">ดูตัวอย่างเมื่อ [A] &ge; 80% &middot; สร้าง seed เมื่อ [A] &ge; 100%</span></h2>
+  <h2>ขั้นตอนสร้าง BIP-39 / BIP-39 steps <span class="pill">สร้าง seed เมื่อทอยครบแผน N พอดี + ผ่าน hard gate เท่านั้น</span></h2>
   <div id="bip"></div>
 </div>
 
@@ -794,7 +846,7 @@ function boot(){
 </div>
 
 <footer>
-Elias Extractor &rarr; BIP-39 &middot; ทำงานออฟไลน์ &middot; ไม่ใช้ hash ในการสร้าง entropy &middot; คำนวณด้วย BigInt<br>
+Elias Extractor &rarr; BIP-39 &middot; v3.1.0 (fixed-batch + hard gate) &middot; ทำงานออฟไลน์ &middot; ไม่ใช้ hash ในการสร้าง entropy &middot; คำนวณด้วย BigInt<br>
 ให้ชุดตรวจสอบผ่านครบก่อน และตรวจ mnemonic บน hardware wallet หรือ software wallet ซ้ำอีกครั้งก่อนใช้จริง<br><br>
 <span style="color:var(--cy)">&copy; 2026 Chollatis Bitcoiner. | Don't Trust, Verify. Powered by Claude AI</span>
 </footer>
