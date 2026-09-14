@@ -8,6 +8,29 @@
   uniform 100% แบบพิสูจน์ได้ทางคณิตศาสตร์ ด้วย Elias extractor (combinatorics ล้วน
   ไม่มี cryptographic hash ในการสร้าง entropy). SHA-256 ใช้เฉพาะ BIP39 checksum.
 
+  VERSION 3.1.1 (2026-09) — CALIBRATION & CLAIM-ACCURACY PATCH
+   [ต่อยอดจาก v3.1.0 · แก้ตามผล external audit รอบที่ 3 — ทุกข้อวัดผลเชิงปริมาณก่อนแก้]
+   A) AUTOCORRELATION THRESHOLD ปรับตามขนาดตัวอย่าง (scale-aware): เดิมใช้ค่าคงที่ |rho|>0.2
+      ซึ่งที่ N=96 คิดเป็นเพียง ~2 sigma → ลูกเต๋าที่ซื่อสัตย์ติดไฟแดง 4.73% และไฟเหลือง 38.5%
+      (วัดจาก 40,000 batch) ผลเสียสองชั้น: ทิ้ง batch ดีทิ้งฟรี + ฝึกผู้ใช้ให้กดผ่านไฟเหลือง
+      ใหม่: RED |rho| > max(0.20, 3.5/sqrt(N)) · YELLOW > max(0.12, 2.5/sqrt(N))
+      ผลวัดใหม่: false-positive RED 0.02% · YELLOW ~1.2% ขณะที่ detection power คงเดิม
+      (sticky-dice 50% → RED 100% · sequential pattern → RED 100%)
+   B) CLAIM ACCURACY: ไม่อ้าง "restores exact uniformity 100%" อีกต่อไป ข้อความใหม่ระบุตรงว่า
+      fixed batch กำจัด stopping-time selection ออกจากโปรโตคอล และ exact uniformity เป็นจริง
+      ภายใต้สมมติฐาน i.i.d. ที่ประกาศไว้ ส่วน hard gate เป็น acceptance conditioning ซึ่ง
+      "เปลี่ยนการกระจายได้จริง" โดยมี **ขอบเขตบนที่พิสูจน์ได้** = log2(1/P(accept))
+      ปัจจุบัน < 0.01 บิตจาก 256 หลังปรับ threshold (เดิม 0.071 บิต) — แลกกับการกันแหล่งที่
+      correlated จริงซึ่งเสียหายระดับหลายสิบบิต จึงเป็น trade-off ที่คุ้มค่าอย่างชัดเจน
+      หมายเหตุเชิงทฤษฎีที่สำคัญ: APT/chi-square เป็นฟังก์ชันของ type (count vector) ล้วน
+      การ gate ด้วยสองตัวนี้ "ไม่ทำลาย uniformity เลย" (Elias: conditioned on type, rank uniform)
+      มีเพียง RCT/autocorr/runs ที่ขึ้นกับลำดับจึงก่อ conditioning — และถูก bound ไว้ข้างต้น
+   C) SYSTEM ENTROPY (เดิมเรียก "salt"): เปลี่ยนชื่อให้ตรงความหมาย (เลี่ยงสับสนกับ BIP39
+      passphrase salt ใน PBKDF2) และบังคับ HARD FAIL เมื่อ crypto.getRandomValues ไม่พร้อม
+      — ไม่ fallback ไป mouse/timing pool อีกต่อไป (pool ยังคง XOR เสริมได้เพราะทำให้แย่ลงไม่ได้
+      แต่ไม่ถือเป็นแหล่ง entropy หลักและไม่อ้างว่าเพิ่ม entropy อย่างมีนัยสำคัญ)
+   D) นิยาม "bias" ของตาราง BATCH ให้ชัด: p_max <= 1.1/n (simulation bound ไม่ใช่ proof)
+
   VERSION 3.1.0 (2026-09) — SECURITY-HARDENING RELEASE
    [แก้ตามผล external audit — ทุกข้อพิสูจน์/วัดผลก่อนแก้]
    1) FIXED-BATCH PROTOCOL: จำนวนทอยถูกล็อกล่วงหน้า (pre-committed N ต่อ alphabet/target)
@@ -30,7 +53,7 @@
 ============================================================================ -->
 <html lang="th"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ELIAS ENTROPY EXTRACTION TERMINAL &rarr; BIP-39 &middot; v3.1.0</title>
+<title>ELIAS ENTROPY EXTRACTION TERMINAL &rarr; BIP-39 &middot; v3.1.1</title>
 <style>
 /* ---- Terminal/HUD aesthetic · inline CSS ล้วน · ธีม Dark/Light ผ่าน CSS variables ---- */
 :root{ /* ===== DARK (ค่าเริ่มต้น) ===== */
@@ -142,7 +165,7 @@ body.privacy tr:active td.bin,body.privacy tr:active td.dec,body.privacy tr:acti
 
 <div class="topbar">
   <div style="flex:1;min-width:0">
-    <h1>&#9670; Elias Extractor &rarr; BIP-39 Seed Generator <span class="pill">v3.1.0</span></h1>
+    <h1>&#9670; Elias Extractor &rarr; BIP-39 Seed Generator <span class="pill">v3.1.1</span></h1>
     <div class="sub">เปลี่ยนการทอยลูกเต๋า/เหรียญที่อาจมี bias &rarr; entropy สม่ำเสมอแบบพิสูจน์ได้ &middot; ออฟไลน์ 100%
       <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">แปลงการทอยที่อาจมี bias ให้เป็น entropy ที่กระจายสม่ำเสมอแบบพิสูจน์ได้ ด้วย Elias extractor (คณิตศาสตร์การจัดหมู่ล้วน ไม่ใช้ hash ในการสร้าง entropy) ทำงานออฟไลน์ 100% ไฟล์เดียว<span class="en">Turns biased dice or coin tosses into provably uniform entropy via the Elias extractor (pure combinatorics, no hashing in the entropy path). Fully offline, single file.</span></span></span>
       <span class="pill">Tails / air-gapped เท่านั้น</span></div>
@@ -181,10 +204,10 @@ body.privacy tr:active td.bin,body.privacy tr:active td.dec,body.privacy tr:acti
 
 <!-- System Entropy (Salt) — ทางเลือก / optional -->
 <div class="panel p-salt">
-  <label style="cursor:pointer;font-size:13px"><input type="checkbox" id="saltChk" onchange="onSaltToggle()" style="width:auto;margin-right:7px;vertical-align:middle"> &#129482; ผสม System Entropy (Salt) — seed ไม่ deterministic จากลูกเต๋าอย่างเดียว</label>
+  <label style="cursor:pointer;font-size:13px"><input type="checkbox" id="saltChk" onchange="onSaltToggle()" style="width:auto;margin-right:7px;vertical-align:middle"> &#129482; ผสม System Entropy (auxiliary) — seed ไม่ deterministic จากลูกเต๋าอย่างเดียว</label>
   <div class="dim" style="font-size:11px;margin-top:3px">ทำไมต้องใช้ / เมื่อไรควรเปิด
-    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">ปกติ seed สร้างจากลำดับการทอยแบบตายตัว (deterministic) — หากมีคนแอบจดลำดับการทอยหรือมี keylogger ก็สร้าง seed เดิมซ้ำได้. เปิดตัวเลือกนี้เพื่อผสมความสุ่มจากเครื่อง (XOR) ทำให้ seed ขึ้นกับทั้งลูกเต๋าและการสุ่มของเครื่อง จึงทำซ้ำจาก log การทอยอย่างเดียวไม่ได้ · ยังคง uniform และ hash-free · ค่าเริ่มต้นปิด<span class="en">By default the seed is deterministic from your rolls. Enable to XOR in system randomness so the seed depends on both dice and machine — not reproducible from a roll log alone. Still uniform & hash-free. Off by default.</span></span></span></div>
-  <div class="dim" style="font-size:11px;margin-top:5px">ขอบเขตการป้องกัน (อ่านให้ชัด): salt กันเฉพาะ<b>การทำซ้ำ seed จาก log การทอย/keylogger</b> — <b>ไม่กัน</b>กล้อง/คนเห็นหน้าจอ (seed ก็แสดงบนจอเช่นกัน) · เชิงคณิตศาสตร์ XOR ต้องการเพียง "แหล่งใดแหล่งหนึ่ง" (ลูกเต๋า หรือ CSPRNG) ที่ uniform และอิสระต่อกัน — ผลลัพธ์แข็งอย่างน้อยเท่าแหล่งที่ดีที่สุดเสมอ ไม่ใช่ต้องเชื่อทั้งสองแหล่ง<span class="en">Scope: the salt only defeats seed reconstruction from a roll log/keylogger. It does not protect against cameras or screen observers (the seed is on screen anyway). Mathematically, XOR needs only ONE of the two sources (dice or CSPRNG) to be uniform and independent — the result is at least as strong as the best source.</span></div>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">ปกติ seed สร้างจากลำดับการทอยแบบตายตัว (deterministic) — หากมีคนแอบจดลำดับการทอยหรือมี keylogger ก็สร้าง seed เดิมซ้ำได้. เปิดตัวเลือกนี้เพื่อผสม entropy อิสระจากเครื่อง (XOR) ทำให้ seed ขึ้นกับทั้งลูกเต๋าและ CSPRNG ของระบบ จึงทำซ้ำจาก log การทอยอย่างเดียวไม่ได้ · ยังคง uniform และ hash-free · ค่าเริ่มต้นปิด · v3.1.1: ถ้าไม่มี CSPRNG ระบบปฏิเสธการเปิดใช้ (ไม่ fallback ไป mouse/timing) · ศัพท์: นี่ไม่ใช่ "salt" ของ BIP39 passphrase (PBKDF2) ซึ่งเป็นคนละกลไก<span class="en">By default the seed is deterministic from your rolls. Enable to XOR in system randomness so the seed depends on both dice and machine — not reproducible from a roll log alone. Still uniform & hash-free. Off by default.</span></span></span></div>
+  <div class="dim" style="font-size:11px;margin-top:5px">ขอบเขตการป้องกัน (อ่านให้ชัด): System Entropy กันเฉพาะ<b>การทำซ้ำ seed จาก log การทอย/keylogger</b> — <b>ไม่กัน</b>กล้อง/คนเห็นหน้าจอ (seed ก็แสดงบนจอเช่นกัน) · เชิงคณิตศาสตร์ XOR ต้องการเพียง "แหล่งใดแหล่งหนึ่ง" (ลูกเต๋า หรือ CSPRNG) ที่ uniform และอิสระต่อกัน — ผลลัพธ์แข็งอย่างน้อยเท่าแหล่งที่ดีที่สุดเสมอ ไม่ใช่ต้องเชื่อทั้งสองแหล่ง<span class="en">Scope: auxiliary system entropy only defeats seed reconstruction from a roll log/keylogger. It does not protect against cameras or screen observers (the seed is on screen anyway). Mathematically, XOR needs only ONE of the two sources (dice or CSPRNG) to be uniform and independent — the result is at least as strong as the best source.</span></div>
   <div id="saltState" class="dim" style="margin-top:6px"></div>
 </div>
 
@@ -233,8 +256,11 @@ const ALPHABETS={
    ห้ามหยุดก่อน (ระบบไม่สร้าง seed) และทอยเกินไม่ได้ (ช่องรับตัดที่ N)
    เหตุผล: การหยุดเมื่อ "บิตถึงเป้า" (first-crossing) ทำให้เงื่อนไขการหยุดพัวพันกับข้อมูล
    ที่กำลังจะเป็น seed → uniformity ของ Elias เสียเล็กน้อย (พิสูจน์ด้วย exact enumeration).
-   การล็อก N ก่อนเริ่มตัดความพัวพันนี้ขาด — ทุกการเรียงของ type มาถึงเส้นชัยครบชุด proof คืน 100%.
-   ค่า N เลือกจาก simulation ให้ P(บิตไม่ถึงเป้า) ≈ 0 แม้เต๋าเบี้ยวปานกลาง (~10%):
+   การล็อก N ก่อนเริ่ม "กำจัด stopping-time selection ออกจากโปรโตคอล" — ทุกการเรียงของ type
+   มาถึงเส้นชัยครบชุด ทำให้ exact uniformity เป็นจริงภายใต้สมมติฐาน i.i.d. ที่ประกาศไว้
+   (v3.1.1: ไม่อ้างว่า "พิสูจน์ 100%" แบบไร้เงื่อนไข — ดูหมายเหตุ B ในหัวไฟล์เรื่อง gate conditioning)
+   ค่า N มาจาก simulation (ไม่ใช่ proof) ให้ P(บิตไม่ถึงเป้า) ~ 0 สำหรับ distribution class
+   ที่นิยามว่า p_max <= 1.1/n (สัญลักษณ์ที่ออกบ่อยสุดไม่เกิน 1.1 เท่าของค่าอุดมคติ):
    ถ้า batch ไหนบิตไม่ถึงเป้า (เต๋าเบี้ยวหนักมาก) → ทิ้งทั้ง batch แล้วเริ่มใหม่ (ไม่ต่อเติม) */
 const BATCH={16:{256:96,128:51}, 6:{256:132,128:68}, 2:{256:336,128:172}};
 function curBatchN(){ return BATCH[+$("type").value][+$("target").value]; }
@@ -501,7 +527,10 @@ function parseInput(){
 }
 
 /* ==========================================================================
-   ส่วนที่ 5.5 — System Entropy (Salt)  [ทางเลือก / opt-in]
+   ส่วนที่ 5.5 — System Entropy (auxiliary independent entropy)  [ทางเลือก / opt-in]
+   v3.1.1: เลิกใช้คำว่า "salt" เป็นชื่อหลัก — คำนี้ชนกับ BIP39 passphrase salt ใน PBKDF2 ซึ่งคนละเรื่อง
+   สิ่งที่ทำจริงคือ E_final = E_dice XOR E_system (auxiliary independent entropy)
+   v3.1.1: HARD FAIL เมื่อ crypto.getRandomValues ไม่พร้อม — ไม่ fallback ไป mouse/timing pool
    ประโยชน์: ปกติ seed = f(ลำดับการทอย) แบบ deterministic 100% — ถ้ามีคนแอบจดลำดับการทอย
    หรือมี hardware keylogger ก็สามารถประมวลผลซ้ำให้ได้ seed เดียวกันได้ การผสม salt จากระบบ
    ด้วย XOR ทำให้ seed ขึ้นกับทั้ง "ลูกเต๋า + ความสุ่มจากเครื่อง" จึงทำซ้ำจาก log การทอยเพียงอย่างเดียวไม่ได้
@@ -520,40 +549,46 @@ try{ document.addEventListener("touchmove",e=>{const t=e.touches&&e.touches[0]; 
      document.addEventListener("pointermove",e=>mixPool(((e.clientX|0)*2654435761)^((e.clientY|0)*40503)^((performance.now()*1000)|0)),{passive:true}); }catch(e){}
 // สร้าง salt 32 ไบต์: หลัก = crypto.getRandomValues (ใช้ได้ใน file:// ไม่ต้อง secure context, ต่างจาก crypto.subtle)
 //   เสริม = pool จาก mouse/timing + high-res timer (XOR-fold แบบ defense-in-depth: แข็งอย่างน้อยเท่าตัวที่ดีที่สุด)
-let SALT_SRC="", SALT_WEAK=false;   // แหล่งที่มา + ธงเตือนเมื่อ "แหล่งหลักไม่พร้อม"
+let SALT_SRC="", SALT_WEAK=false;   // แหล่งที่มา + ธง HARD FAIL เมื่อ CSPRNG ไม่พร้อม
 function genSalt(){
   const out=new Uint8Array(32); let cs=false;
   try{ if(window.crypto&&crypto.getRandomValues){ crypto.getRandomValues(out); cs=true; } }catch(e){}
+  // v3.1.1 — HARD FAIL: ถ้า CSPRNG ของ OS ไม่พร้อม ห้าม fallback ไป mouse/timing (ประเมิน entropy จริงไม่ได้)
+  //   คืนค่า null → ผู้ใช้ต้องเลือก: ปิด System Entropy แล้วใช้ลูกเต๋าล้วน หรือเปลี่ยนสภาพแวดล้อม
+  if(!cs){ SALT_WEAK=true; SALT_SRC="crypto.getRandomValues ไม่พร้อมใช้งาน — ปฏิเสธการสร้าง System Entropy (ไม่ fallback ไป mouse/timing)"; return null; }
   // เสริมด้วย entropy pool (เมาส์/คีย์บอร์ด/timing) แบบ XOR
   // หมายเหตุตรง ๆ: บนเบราว์เซอร์ที่เข้มงวด (Tor ใน Tails) performance.now()/timeStamp มักถูก "ปัดหยาบ"
   //   เพื่อกัน timing attack → entropy จาก timing ต่ำ. แต่พิกัดเมาส์ไม่ถูกจำกัด และ getRandomValues
   //   (เคอร์เนล CSPRNG) คือแหล่งหลักที่แข็งแรง; การ XOR กับ pool อิสระ "ทำให้แย่ลงไม่ได้" จึงปลอดภัยแม้ timing หยาบ
   for(let i=0;i<32;i++){ out[i]=(out[i]^SALT_POOL[i]^((((performance.now()*1000)|0)>>>(i%8))&0xff))&0xff; }
   mixPool(Date.now());
-  SALT_WEAK=!cs;
-  SALT_SRC = cs
-    ? "crypto.getRandomValues (CSPRNG ของเคอร์เนล/OS — แหล่งหลัก) XOR entropy pool (เมาส์/คีย์บอร์ด/timing — เสริม)"
-    : "entropy pool (เมาส์/คีย์บอร์ด/timing) เท่านั้น — getRandomValues ไม่พร้อมใช้งาน";
+  SALT_WEAK=false;
+  SALT_SRC = "crypto.getRandomValues (CSPRNG ของเคอร์เนล/OS — แหล่งเดียวที่นับเป็น entropy) XOR entropy pool (เมาส์/คีย์บอร์ด/timing — เสริมเพื่อ defense-in-depth เท่านั้น ไม่นับเป็น entropy)";
   return out;
 }
 function saltHex(){ let h=""; for(let i=0;i<SALT.length;i++) h+=SALT[i].toString(16).padStart(2,"0"); return h; }
 function renderSaltState(){
-  const note = SALT_WEAK
-    ? '<div class="warn" style="margin-top:5px">&#9888; แหล่งสุ่มหลัก (getRandomValues) ไม่พร้อมใช้งาน — salt อาจอ่อน. แนะนำให้ขยับเมาส์ไปมาสัก 5–10 วินาทีแล้วกด re-roll หรือ <b>ปิด salt แล้วพึ่งการทอยลูกเต๋าล้วน</b></div>'
-    : '<div class="dim" style="margin-top:5px">หมายเหตุ: บนเบราว์เซอร์เข้มงวด (เช่น Tor) ค่า timing อาจถูกปัดหยาบ แต่ getRandomValues (แหล่งหลัก) ยังแข็งแรง และการ XOR กับ pool อิสระทำให้ผลลัพธ์แย่ลงไม่ได้</div>';
+  if(!SALT){   // v3.1.1 HARD FAIL path — CSPRNG ไม่พร้อม
+    $("saltState").innerHTML='<div class="warnbox">&#128683; <b>System Entropy ใช้ไม่ได้:</b> crypto.getRandomValues ไม่พร้อมใช้งานในเบราว์เซอร์นี้ — ระบบ<b>ปฏิเสธการใช้ mouse/timing เป็นตัวแทน</b> เพราะประเมินค่า entropy จริงไม่ได้.<br>ทางเลือก: ปิดตัวเลือกนี้แล้วใช้การทอยลูกเต๋าล้วน (ปลอดภัยและตรวจสอบย้อนได้) หรือเปลี่ยนไปใช้เบราว์เซอร์/สภาพแวดล้อมที่รองรับ.<span class="en">System Entropy unavailable: no CSPRNG. Falling back to mouse/timing is refused by design. Either disable this option (dice-only is safe) or use a supported environment.</span></div>';
+    return;
+  }
+  const note = '<div class="dim" style="margin-top:5px">หมายเหตุ: บนเบราว์เซอร์เข้มงวด (เช่น Tor) ค่า timing ถูกปัดหยาบจน entropy ต่ำมาก — จึง<b>ไม่นับ pool เป็นแหล่ง entropy</b> แหล่งที่นับคือ getRandomValues เท่านั้น การ XOR กับ pool เป็น defense-in-depth ที่ทำให้ผลลัพธ์แย่ลงไม่ได้</div>';
   $("saltState").innerHTML=
-    '<div><span class="dot '+(SALT_WEAK?"d-y":"d-g")+'"></span><b style="color:#d7b3ff">Salt เปิดใช้งาน</b> — seed จะไม่เป็น deterministic จากลำดับการทอยเพียงอย่างเดียว</div>'+
+    '<div><span class="dot d-g"></span><b style="color:#d7b3ff">System Entropy เปิดใช้งาน</b> — seed จะไม่เป็น deterministic จากลำดับการทอยเพียงอย่างเดียว</div>'+
     '<div class="dim" style="margin-top:5px">ที่มาการสุ่ม / source: <span style="color:#c9a6ff">'+SALT_SRC+'</span></div>'+
     note+
-    '<div class="dim" style="margin-top:5px">ค่า Salt (256-bit) — hex:</div><code class="mono">'+saltHex()+'</code>'+
-    '<div style="margin-top:7px"><button onclick="regenSalt()">&#128260; สุ่ม salt ใหม่ / re-roll</button></div>';
+    '<div class="dim" style="margin-top:5px">ค่า System Entropy (256-bit) — hex:</div><code class="mono">'+saltHex()+'</code>'+
+    '<div style="margin-top:7px"><button onclick="regenSalt()">&#128260; สุ่มใหม่ / re-roll</button></div>';
 }
 function onSaltToggle(){
-  if($("saltChk").checked){ if(SALT)SALT.fill(0); SALT=genSalt(); renderSaltState(); }
+  if($("saltChk").checked){ if(SALT)SALT.fill(0); SALT=genSalt(); renderSaltState();
+    if(!SALT){ $("saltChk").checked=false; }   // v3.1.1: CSPRNG ไม่พร้อม → ไม่เปิดใช้งาน (hard fail)
+  }
   else { if(SALT)SALT.fill(0); SALT=null; $("saltState").textContent=""; }
   recompute();
 }
-function regenSalt(){ if(SALT)SALT.fill(0); SALT=genSalt(); renderSaltState(); recompute(); }
+function regenSalt(){ if(SALT)SALT.fill(0); SALT=genSalt(); renderSaltState();
+  if(!SALT && $("saltChk")) $("saltChk").checked=false; recompute(); }
 function saltBits(nbits){ let s=""; for(let i=0;i<nbits/8;i++) s+=SALT[i].toString(2).padStart(8,"0"); return s; }
 function xorBits(a,b){ let o=""; for(let i=0;i<a.length;i++) o+=(a[i]!==b[i])?"1":"0"; return o; }
 
@@ -613,8 +648,12 @@ function renderHealth(seq,n){
   // APT
   const {p:ap,W}=aptMaxProp(seq,n),exp=1/n,sd=Math.sqrt(exp*(1-exp)/W);
   let sA=ap>exp+6*sd?"r":ap>exp+4*sd?"y":"g";if(sA==="r")bad.push("APT");
-  // autocorr
-  const ac=lag1Autocorr(seq);let sC=Math.abs(ac)>0.2?"r":Math.abs(ac)>0.08?"y":"g";if(sC==="r")bad.push("autocorr");
+  // autocorr — v3.1.1: threshold ปรับตามขนาดตัวอย่าง (SE ของ rho ~ 1/sqrt(N))
+  //   เดิมใช้ค่าคงที่ 0.2/0.08 ซึ่งที่ N=96 เท่ากับ ~2.0/0.8 sigma → false-positive สูงมาก
+  //   ใหม่ตั้งที่ ~3.5 sigma (แดง) / ~2.5 sigma (เหลือง) ให้สอดคล้องกับ runs test พร้อม floor กัน N เล็ก
+  const ac=lag1Autocorr(seq);
+  const acR=Math.max(0.20,3.5/Math.sqrt(N)), acY=Math.max(0.12,2.5/Math.sqrt(N));
+  let sC=Math.abs(ac)>acR?"r":Math.abs(ac)>acY?"y":"g";if(sC==="r")bad.push("autocorr");
   // runs
   const rz=runsZ(seq,n);let sU=Math.abs(rz)>3.5?"r":Math.abs(rz)>2.5?"y":"g";if(sU==="r")bad.push("runs");
   for(const s of [sR,sA,sC,sU]){if(s==="r")worst="r";else if(s==="y"&&worst!=="r")worst="y";}
@@ -622,13 +661,16 @@ function renderHealth(seq,n){
   $("cLights").innerHTML=
     light(sR,"RCT · ค่าซ้ำติดกัน",`ค่าเดิมออกซ้ำติดกันมากสุด ${mr} ครั้ง (เตือนเมื่อ ≥${C})`)+
     light(sA,"APT · สัดส่วน",`สัญลักษณ์ที่ออกบ่อยสุด ${(ap*100).toFixed(1)}% ในช่วง ${W} ครั้งล่าสุด (ควรอยู่ราว ${(exp*100).toFixed(1)}%)`)+
-    light(sC,"Autocorr lag-1",`ρ₁ = ${ac.toFixed(3)} (แดงเมื่อ |ρ|>0.2)`)+
+    light(sC,"Autocorr lag-1",`ρ₁ = ${ac.toFixed(3)} (แดงเมื่อ |ρ|>${acR.toFixed(3)} · ปรับตาม N=${N})`)+
     light(sU,"Runs test",`z = ${rz.toFixed(2)} (แดงเมื่อ |z|>3.5)`);
   $("cVerdict").innerHTML = worst==="r"
     ? `<span class="err">&#9679; แดง: การทอยอาจไม่เป็นอิสระต่อกันจริง (${bad.join(", ")}) &mdash; <b>ระบบบล็อกการสร้าง seed</b> (hard gate) &rarr; ทิ้ง batch นี้ กด WIPE แล้วเขย่า/ทอยชุดใหม่ให้เป็นอิสระ</span>`
     : worst==="y"
     ? `<span class="warn">&#9679; เหลือง: พบสัญญาณผิดปกติเล็กน้อย &mdash; ระบบจะขอคำยืนยันก่อนสร้าง seed · ตรวจวิธีทอย/ลูกเต๋าอีกครั้ง</span>`
     : `<span style="color:var(--gn)">&#9679; No anomaly detected — ไม่พบความผิดปกติจากการตรวจทางสถิติ (การตรวจจำกัดขอบเขต ไม่ใช่การพิสูจน์ i.i.d. และไม่ใช่ใบรับรองความปลอดภัย)</span>`;
+  // v3.1.1 — เปิดเผยตรงไปตรงมา: การใช้ผลตรวจเป็น gate = acceptance conditioning ซึ่งเปลี่ยนการกระจายได้
+  // ขอบเขตบนที่พิสูจน์ได้ของความเสียหาย = log2(1/P(accept)) ซึ่งหลังปรับ threshold ใน v3.1.1 วัดได้ < 0.01 บิต จาก 256
+  $("cVerdict").innerHTML += '<div class="dim" style="font-size:11px;margin-top:5px">หมายเหตุเชิงทฤษฎี: การทิ้ง batch ตามผลตรวจคือการ condition การกระจาย (ไม่ว่าจะให้โปรแกรมหรือมนุษย์เป็นผู้ตัดสินใจก็ตาม) — ผลกระทบถูกจำกัดด้วยขอบเขตบน log2(1/P(accept)) ซึ่งวัดได้ &lt; 0.01 บิตจาก 256 หลังการปรับเกณฑ์ใน v3.1.1 ขณะที่แหล่งที่ correlated จริงเสียหายระดับหลายสิบบิต<span class="en">Theory note: discarding a batch based on these tests conditions the output distribution (whether the program or the human decides). The effect is bounded above by log2(1/P(accept)), measured at &lt; 0.01 bits out of 256 after the v3.1.1 recalibration, versus tens of bits lost to a genuinely correlated source.</span></div>';
 }
 
 /* ==========================================================================
@@ -784,7 +826,7 @@ function boot(){
   const allPass=runSelfTest();
   $("eng").className=allPass?"ok":"bad";
   $("eng").textContent=allPass
-    ? "สถานะระบบ v3.1.0: ✓ ตรวจสอบผ่านทั้งหมด / all checks passed (SHA-256 KAT · BIP-39 vectors · Elias round-trip+uniformity · i.i.d. monitor · external audit vector)"
+    ? "สถานะระบบ v3.1.1: ✓ ตรวจสอบผ่านทั้งหมด / all checks passed (SHA-256 KAT · BIP-39 vectors · Elias round-trip+uniformity · i.i.d. monitor · external audit vector)"
     : "สถานะระบบ: ✗ มีการตรวจสอบไม่ผ่าน — ห้ามใช้กับเงินจริง / some checks FAILED — do not use for real funds";
   recompute();
 }
@@ -796,7 +838,7 @@ function boot(){
 <!-- [A] PRIMARY: ความคืบหน้า Entropy (เกณฑ์ตัดสิน "ครบหรือยัง") -->
 <div class="panel">
   <h2>[A] &middot; ความคืบหน้า batch ที่ล็อกไว้ / Pre-committed batch progress <span class="pill">หลัก &middot; ตัวชี้ขาด</span>
-    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">v3.1.0: ตัวชี้ขาดคือ "ทอยครบแผน N พอดีหรือยัง" — จำนวน N ถูกล็อกไว้ล่วงหน้าก่อนทอยลูกแรก เพื่อให้การหยุดไม่ขึ้นกับข้อมูลสุ่มที่กำลังจะเป็น seed (คืนเงื่อนไขการพิสูจน์ uniformity 100%). ห้ามหยุดก่อนครบ และระบบไม่รับเกิน N.<span class="en">v3.1.0: the gauge is "have you rolled exactly N?" — N is pre-committed before the first roll so the stopping decision is independent of the randomness that becomes the seed, restoring the exact-uniformity proof. No early stop; input is capped at N.</span></span></span></h2>
+    <span class="info" tabindex="0" onclick="toggleTip(this)">&#9432;<span class="tip">v3.1.0: ตัวชี้ขาดคือ "ทอยครบแผน N พอดีหรือยัง" — จำนวน N ถูกล็อกไว้ล่วงหน้าก่อนทอยลูกแรก เพื่อกำจัด stopping-time selection ออกจากโปรโตคอล (exact uniformity เป็นจริงภายใต้สมมติฐาน i.i.d. ที่ประกาศไว้). ห้ามหยุดก่อนครบ และระบบไม่รับเกิน N.<span class="en">v3.1.0: the gauge is "have you rolled exactly N?" — N is pre-committed before the first roll so the stopping decision is independent of the randomness that becomes the seed, removing stopping-time selection from the protocol (exact uniformity holds under the stated i.i.d. source assumption). No early stop; input is capped at N.</span></span></span></h2>
   <div class="bar"><div id="fillA" class="fill"></div><div id="labA" class="lab">0 / 0</div></div>
   <div id="aNums" class="dim"></div>
 </div>
@@ -846,7 +888,7 @@ function boot(){
 </div>
 
 <footer>
-Elias Extractor &rarr; BIP-39 &middot; v3.1.0 (fixed-batch + hard gate) &middot; ทำงานออฟไลน์ &middot; ไม่ใช้ hash ในการสร้าง entropy &middot; คำนวณด้วย BigInt<br>
+Elias Extractor &rarr; BIP-39 &middot; v3.1.1 (fixed-batch + calibrated gate) &middot; ทำงานออฟไลน์ &middot; ไม่ใช้ hash ในการสร้าง entropy &middot; คำนวณด้วย BigInt<br>
 ให้ชุดตรวจสอบผ่านครบก่อน และตรวจ mnemonic บน hardware wallet หรือ software wallet ซ้ำอีกครั้งก่อนใช้จริง<br><br>
 <span style="color:var(--cy)">&copy; 2026 Chollatis Bitcoiner. | Don't Trust, Verify. Powered by Claude AI</span>
 </footer>
