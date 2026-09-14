@@ -1,6 +1,6 @@
 # Elias Extractor -> BIP39 Seed Generator
 
-![Version](https://img.shields.io/badge/Version-3.1.0-blueviolet?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.1.1-blueviolet?style=for-the-badge)
 ![Offline](https://img.shields.io/badge/Status-100%25%20Offline-success?style=for-the-badge)
 ![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-blue?style=for-the-badge)
 ![Combinatorics](https://img.shields.io/badge/Entropy-Combinatorics-critical?style=for-the-badge)
@@ -9,9 +9,9 @@
 **🌐 Live Demo / ลองใช้งานออนไลน์:** [Elias-Extractor-BIP39.html](https://chontit.github.io/elias-bip39-generator/Elias-Extractor-BIP39.html)
 *(คำเตือน: เวอร์ชันออนไลน์มีไว้เพื่อการทดสอบ UI และการทำงานเท่านั้น ห้ามใช้สร้าง Seed สำหรับเก็บเงินจริงเด็ดขาด)*
 
-**🔒 SHA256 Hash of `Elias-Extractor-BIP39.html` (v3.1.0):**
+**🔒 SHA256 Hash of `Elias-Extractor-BIP39.html` (v3.1.1):**
 ```text
-EAC5A3F49ACD230E33FFC1C9672FF938248187A7D5C27AA4B4FEF5CC1C84A0F8
+C472245B4EE9606299C3B1188C131489FFE3AE00E488CD5773C6A65011509018
 ```
 **🔑 OpenPGP Signing Key / กุญแจสำหรับตรวจลายเซ็น Release:**
 ```text
@@ -29,7 +29,24 @@ gpg --fingerprint "Chollatis"   # ต้องตรงกับ fingerprint ด
 *อย่าเชื่อ fingerprint จากแหล่งเดียว (รวมถึงหน้านี้) — เทียบจากหลายช่องทางอิสระ: repo นี้, learning.chontit.win, และประกาศของชุมชน / Never trust a single channel for the fingerprint — cross-check it across this repo, learning.chontit.win, and community announcements.*
 
 ---
-## 🆕 มีอะไรใหม่ใน v3.1.0 (Security-Hardening Release)
+## 🆕 มีอะไรใหม่ใน v3.1.1 (Calibration & Claim-Accuracy Patch)
+
+ต่อยอดจาก v3.1.0 หลัง **external audit รอบที่ 3** — ทุกข้อวัดผลเชิงปริมาณก่อนแก้:
+
+| # | การเปลี่ยนแปลง | ผลที่วัดได้ |
+|---|---|---|
+| A | **Autocorrelation threshold ปรับตามขนาดตัวอย่าง** — เดิมใช้ค่าคงที่ \|ρ\|>0.2 ซึ่งที่ N=96 เท่ากับเพียง ~2σ ใหม่: RED \|ρ\|>max(0.20, 3.5/√N) · YELLOW >max(0.12, 2.5/√N) | **RED false-positive 4.80% → 0.09%** · YELLOW 38.5% → 2.4% · detection power คงเดิม (sticky-dice 50% → RED 100%, sequential pattern → RED 100%) |
+| B | **แก้ claim ให้ตรงความจริง** — เลิกอ้าง "restores exact uniformity 100%" เปลี่ยนเป็น "fixed batch กำจัด stopping-time selection ออกจากโปรโตคอล · exact uniformity เป็นจริงภายใต้สมมติฐาน i.i.d. ที่ประกาศไว้" พร้อมเปิดเผยผลของ gate conditioning ตรงๆ ใน UI | ขอบเขตบนที่**พิสูจน์ได้** log₂(1/P(accept)) = **0.0013 บิต จาก 256** (v3.1.0 = 0.071) เทียบกับความเสียหายระดับหลายสิบบิตจาก source ที่ correlated จริง |
+| C | **System Entropy: HARD FAIL เมื่อไม่มี CSPRNG** — ไม่ fallback ไป mouse/timing pool อีกต่อไป และเลิกใช้คำว่า "salt" เป็นชื่อหลัก (ชนกับ BIP39 passphrase salt ใน PBKDF2) | ปิดช่องที่ผู้ใช้อาจได้ entropy ที่ประเมินค่าไม่ได้โดยไม่รู้ตัว |
+| D | **นิยาม "bias" ของตาราง BATCH ให้ชัด** — p_max ≤ 1.1/n และระบุว่าเป็น simulation bound ไม่ใช่ proof | ผู้ตรวจสอบทราบขอบเขตของ claim ตรงไปตรงมา |
+
+**หมายเหตุเชิงทฤษฎีที่สำคัญ (ค้นพบระหว่าง audit รอบนี้):** APT และ chi-square เป็นฟังก์ชันของ **type (count vector) ล้วน** — ทฤษฎีบทของ Elias คือ "conditioned on type, rank uniform" ดังนั้นการ gate ด้วยสองตัวนี้**ไม่ทำลาย uniformity เลยแม้แต่นิดเดียว** (เหตุผลเดียวกับที่การทิ้ง batch เพราะบิตไม่ถึงเป้าปลอดภัย) มีเพียง RCT/autocorr/runs ที่ขึ้นกับ**ลำดับ** จึงก่อ conditioning ซึ่งถูก bound ไว้ที่ 0.0013 บิตข้างต้น
+
+**เหตุผลที่ยังคง hard gate ไว้ (ไม่เปลี่ยนเป็น advisory):** การเปลี่ยนเป็นคำเตือนแล้วให้ผู้ใช้ตัดสินใจทิ้ง batch เอง **ไม่ลด conditioning เลยแม้แต่นิดเดียว** — ถ้าผู้ใช้ทำตามคำแนะนำ การกระจายถูก condition เหมือนกันเป๊ะ ต่างแค่ผู้ตัดสินใจ การกำจัด conditioning จริงต้องยอมใช้ batch แรกเสมอแม้ตรวจพบ correlation ซึ่งแลก 0.0013 บิต กับความเสี่ยงหลายสิบบิต — เป็นการแลกที่ขาดทุนชัดเจน ทางที่ถูกคือ**คง gate ไว้ ลด false positive ให้ต่ำที่สุด และประกาศ bound อย่างโปร่งใส** ซึ่งคือสิ่งที่ v3.1.1 ทำ
+
+---
+
+## v3.1.0 (Security-Hardening Release) — สรุปย่อ
 ---
 
 เวอร์ชันนี้เกิดจาก **การ audit ภายนอกอิสระ 2 รอบ** ทุกประเด็นถูกพิสูจน์/วัดขนาดก่อนแก้ (ไม่แก้ตามความรู้สึก) — รายละเอียดเต็มใน Release Notes
