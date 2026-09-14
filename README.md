@@ -1,6 +1,6 @@
 # Elias Extractor -> BIP39 Seed Generator
 
-![Version](https://img.shields.io/badge/Version-3.1.1-blueviolet?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.1.2-blueviolet?style=for-the-badge)
 ![Offline](https://img.shields.io/badge/Status-100%25%20Offline-success?style=for-the-badge)
 ![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-blue?style=for-the-badge)
 ![Combinatorics](https://img.shields.io/badge/Entropy-Combinatorics-critical?style=for-the-badge)
@@ -9,9 +9,9 @@
 **🌐 Live Demo / ลองใช้งานออนไลน์:** [Elias-Extractor-BIP39.html](https://chontit.github.io/elias-bip39-generator/Elias-Extractor-BIP39.html)
 *(คำเตือน: เวอร์ชันออนไลน์มีไว้เพื่อการทดสอบ UI และการทำงานเท่านั้น ห้ามใช้สร้าง Seed สำหรับเก็บเงินจริงเด็ดขาด)*
 
-**🔒 SHA256 Hash of `Elias-Extractor-BIP39.html` (v3.1.1):**
+**🔒 SHA256 Hash of `Elias-Extractor-BIP39.html` (v3.1.2):**
 ```text
-C472245B4EE9606299C3B1188C131489FFE3AE00E488CD5773C6A65011509018
+053D5C75F3B9329B68493349E40E95198B67A60D431C0FA14BB8933E0241EA8A
 ```
 **🔑 OpenPGP Signing Key / กุญแจสำหรับตรวจลายเซ็น Release:**
 ```text
@@ -29,7 +29,34 @@ gpg --fingerprint "Chollatis"   # ต้องตรงกับ fingerprint ด
 *อย่าเชื่อ fingerprint จากแหล่งเดียว (รวมถึงหน้านี้) — เทียบจากหลายช่องทางอิสระ: repo นี้, learning.chontit.win, และประกาศของชุมชน / Never trust a single channel for the fingerprint — cross-check it across this repo, learning.chontit.win, and community announcements.*
 
 ---
-## 🆕 มีอะไรใหม่ใน v3.1.1 (Calibration & Claim-Accuracy Patch)
+## 🆕 มีอะไรใหม่ใน v3.1.2 (Batch Commitment — Cherry-Picking Lock)
+
+**สรุปสั้น: การแก้เชิงหลักการออกแบบ ไม่ใช่ช่องโหว่ที่ทำให้เงินเสี่ยง — ไม่มีใครต้องสร้าง wallet ใหม่**
+
+**ปัญหา:** v3.1.0–3.1.1 ปิด *stopping-time selection* ระหว่างทอยได้แล้ว แต่เมื่อ batch ครบ N และแสดง mnemonic ยังเปิดช่องให้ผู้ใช้ **"หมุนหาผลลัพธ์ที่ถูกใจ" (cherry-picking)** ไว้ 5 ทาง: ปุ่ม re-roll ของ System Entropy · toggle เปิด/ปิด · undo/แก้การทอย · พิมพ์ทับทั้ง batch · เปลี่ยนแหล่ง/เป้าหมาย
+
+**ขนาดของผลกระทบ (ตัวเลขก่อนคำบรรยาย):** ถ้าหมุน T ครั้งแล้วเลือก 1 ผลลัพธ์ min-entropy ลดได้ **ไม่เกิน log₂(T)**
+
+| พฤติกรรม | ครั้ง | entropy เหลือ |
+|---|---|---|
+| จดชุดแรกที่แสดง | 1 | **256.0 บิต** |
+| กด re-roll เล่นๆ | 10 | 252.7 บิต |
+| ไล่หาคำแรกที่ชอบ | ~2,048 | 245.0 บิต |
+| สคริปต์กดพันล้านครั้ง | 10⁹ | **226.1 บิต** |
+
+เทียบกับเพดานจริงของระบบ คือ ECDLP บน secp256k1 ที่ ~2¹²⁸ — **แม้กรณีสุดโต่งที่สุด seed ยังแข็งกว่าเพดานราว 2⁹⁸ เท่า** ไม่มีสถานการณ์ brute-force จริงใดที่ช่องนี้ทำให้ wallet แตกได้
+
+**แล้วทำไมยังแก้?** (1) ความถูกต้องของ claim — เครื่องมือประกาศว่า output uniform พิสูจน์ได้ ตราบใดที่ผู้ใช้เลือกผลลัพธ์ได้ คำกล่าวนี้จริงเฉพาะเมื่อผู้ใช้มีวินัย ซึ่งพิสูจน์ไม่ได้ · (2) ผู้ใช้ทั่วไปอาจ re-roll เพราะไม่ชอบคำที่ได้ · (3) ต้นทุนการแก้ ≈ ศูนย์ ไม่กระทบ workflow ของคนที่ทำถูกอยู่แล้ว
+
+**การแก้ — BATCH COMMITMENT:** เมื่อ batch ครบ N และแสดง mnemonic ระบบ commit ทันที — ล็อกช่องป้อนการทอย (read-only), System Entropy toggle, ปุ่ม re-roll, ปุ่ม undo, การเปลี่ยนแหล่ง/เป้าหมาย และ `recompute()` early-return ทุกกรณี (belt & suspenders — แม้แก้ผ่าน devtools ผลบนจอก็ไม่เปลี่ยน)
+
+**หนึ่ง batch = หนึ่ง seed** ทางออกเดียวคือ WIPE ทิ้งทั้งชุด ซึ่งบังคับทอยลูกเต๋าจริงใหม่ทั้ง N ครั้ง — ต้นทุนทางกายภาพนี้คือกลไกกัน grinding ที่แท้จริง และ UI ประกาศตรงๆ ว่าการทิ้ง batch หลังเห็น seed ก็เป็น selection channel เช่นกัน ให้ทำเฉพาะเมื่อมีเหตุผลด้านความปลอดภัย ไม่ใช่เพราะไม่ชอบคำที่ได้
+
+*ทดสอบแล้วทั้ง 5 ช่องทาง: blocked ครบ · WIPE ปลดล็อกครบ · batch ใหม่ทำงานปกติ*
+
+---
+
+## v3.1.1 (Calibration & Claim-Accuracy Patch) — สรุปย่อ
 
 ต่อยอดจาก v3.1.0 หลัง **external audit รอบที่ 3** — ทุกข้อวัดผลเชิงปริมาณก่อนแก้:
 
